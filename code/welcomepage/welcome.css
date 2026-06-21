@@ -15,7 +15,7 @@ textarea {
 html, body {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -395,18 +395,18 @@ body {
   text-align: center;
   padding: 9px;
   border-top: 1px solid rgba(255, 19, 19, 0.15);
+  box-shadow: 0 -8px 20px rgba(247, 107, 107, 0.1);
   color: #666;
   font-size: 0.85rem;
   background: #0a0a0a; /* damit es Inhalte dahinter wirklich verdeckt */
   margin-top: 0; /* margin-top: auto entfernen, braucht's bei fixed nicht mehr */
-  overflow: hidden;
-  min-height: 60px;
+  overflow: visible;
+  min-height: 100px;
 
 }
 .footer-indicator {
   position: absolute;
   top: 0;
-  bottom: 60px; 
   filter: blur(3px);
   left: 0;
   width: 50%;
@@ -414,7 +414,7 @@ body {
   background: rgb(255, 255, 255); 
   z-index: 9999;
 }
-
+ 
 /*  Animations */
 @keyframes fadeInDown {
   from {
@@ -440,7 +440,37 @@ body {
     transform: translateY(0);
   }
 }
-
+.fox-wrapper {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: -8px;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 9999;
+}
+.fox-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+.fox-walk {
+  opacity: 0;
+}
+.fox-idle {
+  opacity: 1;
+}
+.fox-wrapper.walking .fox-idle {
+  opacity: 0;
+}
+.fox-wrapper.walking .fox-walk {
+  opacity: 1;
+}
 /* Responsive Design */
 @media (max-width: 768px) {
   .main-title {

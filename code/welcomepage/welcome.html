@@ -1,79 +1,61 @@
-
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Have a Live WebOS - Welcome</title>
-    <link rel="stylesheet" href="welcome.css">
-  </head>
-  <body>
-    <div class="background-gradient"></div>
-    <div class="stars"></div>
-    
-    <main class="container">
-      <!-- Header Section -->
-      <header class="header">
-        <div class="logo-section">
-          <h1 class="main-title">Have a Live WebOS</h1>
-          <p class="subtitle">Welcome back</p>
-        </div>
-      </header>
 
-      <!-- Main Content -->
-      <div class="content-wrapper">
-        <!-- From Uiverse.io by TISEPSE -->
-        <button class="greeting-btn">
-          <a href="#"><span>Welcome back<br>nice to see you again! lets start where you stopped</span></a>
-        </button>
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Have a Live WebOS - Welcome</title>
+  <link rel="stylesheet" href="welcome.css">
+</head>
 
-        <!-- CTA Buttons -->
-        <div class="button-group">
-          <!-- From Uiverse.io by alexmaracinaru -->
-          <button class="cta" type="button" onclick="startCoding()">
-            <span class="hover-underline-animation">let's go!</span>
-            <svg
-              id="arrow-horizontal"
-              xmlns="http://www.w3.org/2000/svg"
-              width="30"
-              height="10"
-              viewBox="0 0 46 16"
-            >
-              <path
-                id="Path_10"
-                data-name="Path 10"
-                d="M8,0,6.545,1.455l5.506,5.506H-30V9.039H12.052L6.545,14.545,8,16l8-8Z"
-                transform="translate(30)"
-              ></path>
-            </svg>
-          </button>
-        </div>
+<body>
+  <div class="background-gradient"></div>
+  <div class="stars"></div>
+
+  <main class="container">
+    <!-- Header Section -->
+    <header class="header">
+      <div class="logo-section">
+        <h1 class="main-title">Have a Live WebOS</h1>
+        <p class="subtitle">Welcome back</p>
       </div>
+    </header>
 
-      <!-- Footer -->
-      <footer class="footer">
-        <p>Keep coding, stay inspired | Have a Live WebOS</p>
-        <img src ="assets/red-idle.gif" id="fox"class="fox" alt="fox pet">
-      </footer>
-    </main>
+    <!-- Main Content -->
+    <div class="content-wrapper">
+      <!-- From Uiverse.io by TISEPSE -->
+      <button class="greeting-btn">
+        <a href="#"><span>Welcome back<br>nice to see you again! lets start where you stopped</span></a>
+      </button>
 
-    <script src="welcome.js"></script>
-  </body>
-  <body>
+      <!-- CTA Buttons -->
+      <div class="button-group">
+        <!-- From Uiverse.io by alexmaracinaru -->
+        <button class="cta" type="button" onclick="startCoding()">
+          <span class="hover-underline-animation">let's go!</span>
+          <svg id="arrow-horizontal" xmlns="http://www.w3.org/2000/svg" width="30" height="10" viewBox="0 0 46 16">
+            <path id="Path_10" data-name="Path 10"
+              d="M8,0,6.545,1.455l5.506,5.506H-30V9.039H12.052L6.545,14.545,8,16l8-8Z" transform="translate(30)"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
 
-  <p>Maus X: <span id="x-wert">0</span></p>
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Keep coding, stay inspired | Have a Live WebOS</p>
+      <div class="fox-wrapper" id="fox-wrapper">
+        <img src="../assets/red_idle_8fps.gif" id="fox-idle" class="fox-frame fox-idle" alt="fox idle">
+        <img src="../assets/red_walk_8fps.gif" id="fox-walk" class="fox-frame fox-walk" alt="fox idle">
+      </div>
+      <div class="footer-indicator" id="footer-indicator"></div>
+    </footer>
+  </main>
 
-  <script>
-    document.addEventListener('mousemove', (e) => {
-      document.getElementById('x-wert').textContent = e.clientX;
-    });
-  </script>
-  <footer class="footer">
-  <p>Keep coding, stay inspired | Have a Live WebOS</p>
-  <div class="footer-indicator" id="footer-indicator"></div>
-</footer>
+  <script src="welcome.js"></script>
 </body>
+
 </html>
