@@ -1,0 +1,78 @@
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  text-align: center;
+  padding: 9px;
+  border-top: 1px solid rgba(255, 19, 19, 0.15);
+  box-shadow: 0 -8px 20px rgba(247, 107, 107, 0.1);
+  color: #666;
+  font-size: 0.85rem;
+  background: #0a0a0a;
+  margin-top: 0;
+  overflow: visible;
+  min-height: 40px;
+}
+
+.footer-indicator {
+  position: absolute;
+  top: 0;
+  filter: blur(3px);
+  left: 0;
+  width: 50%;
+  height: 3px;
+  background: rgb(187, 255, 156);
+  z-index: 9999;
+}
+
+.fox-wrapper {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: -8px;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 9999;
+}
+
+.fox-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.fox-walk {
+  opacity: 0;
+}
+
+.fox-lie {
+  opacity: 0;
+}
+
+.fox-idle {
+  opacity: 1;
+}
+
+.fox-wrapper.walking .fox-idle {
+  opacity: 0;
+}
+
+.fox-wrapper.walking .fox-walk {
+  opacity: 1;
+}
+
+.fox-wrapper.lying .fox-walk,
+.fox-wrapper.lying .fox-idle {
+  opacity: 0;
+}
+
+.fox-wrapper.lying .fox-lie {
+  opacity: 1;
+}

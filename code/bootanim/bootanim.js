@@ -7,7 +7,7 @@ const steps = [
 ];
 
 // Nächste Seite nach dem letzten Schritt (anpassen sobald du weißt, wo's hingeht)
-const NEXT_PAGE = '../main/main.html';
+const NEXT_PAGE = '../Desktop/Desktop.html';
 
 steps.forEach((step, index) => {
   // Schritt aktivieren (leuchtet auf)
