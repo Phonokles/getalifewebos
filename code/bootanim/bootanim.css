@@ -8,7 +8,7 @@ html, body {
     width:100%;
     height:100%;
     overflow: hidden;
-    background: #0a0a0a;
+    background: #0a0a0a; 
     color: #ffffff;
     font-family: 'Bitcount', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
@@ -32,7 +32,7 @@ html, body {
 .checklist-title {
     font-size: 3rem;
     letter-spacing: 4px;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.774);
     margin-bottom: 8px;
 }
 
@@ -47,13 +47,13 @@ html, body {
     align-items: center;
     gap:12px;
     font: size 1.4rem;
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.87);
     transition: color 0.3s ease;
 
 }
 .check-box {
     font-size: 1.4rem;
-    color:rgba(255, 255, 255, 0.2);
+    color:rgba(255, 255, 255, 0.801);
     transition: color 0.3 ease;
     min-width: 24px;
 }
@@ -61,7 +61,7 @@ html, body {
     color: rgba(226, 252, 228, 0.9)
 }
 .check-item.done .check-box {
-    color: #e4fddf
+    color: #2bff00
 }
 .boot-spinner-wrapper {
     display: flex;

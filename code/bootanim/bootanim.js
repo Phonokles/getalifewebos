@@ -14,7 +14,7 @@ steps.forEach((step, index) => {
   setTimeout(() => {
     const el = document.getElementById(step.id);
     el.classList.add('active');
-    el.querySelector('.check-box').textContent = '[/]';
+    el.querySelector('.check-box').textContent = '(/)';
   }, step.delay);
 
   // Schritt abhaken (fertig)
@@ -22,7 +22,7 @@ steps.forEach((step, index) => {
     const el = document.getElementById(step.id);
     el.classList.remove('active');
     el.classList.add('done');
-    el.querySelector('.check-box').textContent = '[x]';
+    el.querySelector('.check-box').textContent = '{*}';
 
     // Nach dem letzten Schritt weiterleiten
     if (index === steps.length - 1) {
