@@ -1,0 +1,88 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width:100%;
+    height:100%;
+    overflow: hidden;
+    background: #0a0a0a;
+    color: #ffffff;
+    font-family: 'Bitcount', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+.boot-container {
+    width: 100%;
+    height:100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 120px;
+}
+
+.boot-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    opacity: 0;
+    animation: fadeIn 0.5 ease forwards;
+}
+
+.checklist-title {
+    font-size: 3rem;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+}
+
+.checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px
+}
+.check-item {
+    display: flex;
+    align-items: center;
+    gap:12px;
+    font: size 1.4rem;
+    color: rgba(255, 255, 255, 0.2);
+    transition: color 0.3s ease;
+
+}
+.check-box {
+    font-size: 1.4rem;
+    color:rgba(255, 255, 255, 0.2);
+    transition: color 0.3 ease;
+    min-width: 24px;
+}
+.check-item.active .check-text {
+    color: rgba(226, 252, 228, 0.9)
+}
+.check-item.done .check-box {
+    color: #e4fddf
+}
+.boot-spinner-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeIn 0.5s ease 0.2s forwards
+}
+.boot-spinner{
+    width: 200px;
+    height:200px;
+    border: 1.5px solid rgba(11, 105, 8, 0.1);
+    border-top: 1.5px solid rgba(34, 235, 134, 0.9);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg);}
+}
+@keyframes fadeIn{
+    from{ opacity: 0; transform: translateY(6px); }
+    to  { opacity: 1; transform: translateY(0);}
+}

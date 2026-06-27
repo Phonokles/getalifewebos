@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+        <meta charset="uft-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title> Have a Life WebOS -- Boot</title>
+        <link rel="stylesheet" href="bootanim.css">
+    </head>
+    <body>
+        <div class="boot-container">
+
+            <div class="boot-checklist" id="boot-checklist">
+        <div class="checklist-title">SYSTEM BOOT</div>
+        <ul class="checklist">
+          <li class="check-item" id="check-0">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">initializing WebOS...</span>
+          </li>
+          <li class="check-item" id="check-1">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">loading kernel modules...</span>
+          </li>
+          <li class="check-item" id="check-2">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">mounting filesystem...</span>
+          </li>
+          <li class="check-item" id="check-3">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">starting services...</span>
+          </li>
+          <li class="check-item" id="check-4">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">welcome, user</span>
+          </li>
+        </ul>
+      </div>
+
+
+      <div class="boot-spinner-wrapper">
+        <div class="boot-spinner"></div>
+        </div>
+
+    <div>
+    <script>src="bootanim.js" </script> 
+    </body>
+    </html>

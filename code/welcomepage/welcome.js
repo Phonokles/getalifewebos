@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const inactivityDelay = 5000;
   const speed = 5;
   const idleThreshold = 2;
+  
+  function startCoding(){
+    window.location.href = '../bootanim/bootanim.html'
+  }
 
   function setWalkingState(walking) {
     if (walking ) {

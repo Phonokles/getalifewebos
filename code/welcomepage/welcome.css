@@ -400,8 +400,8 @@ body {
   z-index: 100;
   text-align: center;
   padding: 9px;
-  border-top: 1px solid rgba(255, 19, 19, 0.15);
-  box-shadow: 0 -8px 20px rgba(247, 107, 107, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 -8px 20px rgba(255, 255, 255, 0.1);
   color: #666;
   font-size: 0.85rem;
   background: #0a0a0a; /* damit es Inhalte dahinter wirklich verdeckt */
