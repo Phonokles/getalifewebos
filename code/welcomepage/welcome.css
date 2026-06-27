@@ -84,11 +84,11 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: 40px;
   padding-top: 20px;
-  min-height: calc(100vh - 100px);
+  height: 400px;
 }
 
 /* Header*/
@@ -181,18 +181,6 @@ body {
   animation: fadeInUp 0.8s ease-out 0.3s both;
 }
 
-.cta {
-  padding: 18px 42px;
-  font-size: 1.1rem;
-  font-weight: 400;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-width: 220px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
 
 
 .cta svg {
@@ -257,27 +245,41 @@ body {
 .greeting-btn {
   background-color: #212121;
   border: none;
-  display: inline-flex;
-  justify-content: center;
-  width: min(860px, 100%);
+  display: flex;
+  justify-content: flex-start;
+  width: 400px;
+  height: 400px;
   margin: 0 auto;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 19px;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.15);
+  transition: box-shadow 0.3s ease;
+}
+.greeting-btn:hover{
+  box-shadow: 0 0 40px 8px rgba(255, 255, 255, 0.45);
+  height: 430px;
+  width: 430;
+  font-size: 20px;
 }
 
 .greeting-btn a {
   position: relative;
   display: inline-flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   width: 100%;
-  padding: 28px 36px;
+  padding: 40px 50px;
   border: 2px solid #fefefe;
   text-transform: uppercase;
   color: #fefefe;
   text-decoration: none;
   font-weight: 700;
-  font-size: 28px;
-  line-height: 1.2;
-  text-align: center;
+  font-size: 22px;
+  line-height: 2.5;
+  text-align: left;
 }
 
 .greeting-btn a span {
@@ -324,17 +326,18 @@ body {
 
 /* From Uiverse.io by alexmaracinaru */
 .cta {
-  padding: 18px 42px;
-  font-size: 1.1rem;
+  padding: 20px 42px;
+  font-size: 2rem;
   font-weight: 700;
   border: none;
   background: none;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 6px;
-  min-width: 600px;
+  width: 300px;
+  height: 100px;
   color: #ffffff;
   transition: transform 0.3s ease;
 }
@@ -343,10 +346,11 @@ body {
 .cta span {
   padding-bottom: 0;
   letter-spacing: 1px;
-  font-size: 1rem;
+  font-size: 1.3rem;
   padding-right: 0;
   text-transform: uppercase;
   color: #ffffff;
+  text-align: left;
 }
 
 .cta svg {
@@ -365,6 +369,8 @@ body {
   position: relative;
   color: #ffffff;
   padding-bottom: 20px;
+  display: block;
+  text-align: left;
 }
 
 .hover-underline-animation:after {
@@ -460,6 +466,9 @@ body {
   image-rendering: pixelated;
 }
 .fox-walk {
+  opacity: 0;
+}
+.fox-lie {
   opacity: 0;
 }
 .fox-idle {

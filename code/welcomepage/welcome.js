@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let facingRight = true;
   let wanderPauseUntil = 0;
   let wanderTargetX = null;
+  let isLying = false
   let lastMouseMoveTime = performance.now();
   const inactivityDelay = 5000;
   const speed = 5;
@@ -24,10 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
       foxwrapper.classList.remove('walking');
       if (!foxwrapper.classList.contains('lying')) {
         const isInactive = performance.now() - lastMouseMoveTime > inactivityDelay;
-        if (isInactive && Math.random() < 0.1){
-          foxwrapper.classList.remove('walking')
+        if (isInactive && !isLying && Math.random() < 0.15){
+          isLying = true;
           foxwrapper.classList.add('lying');
-          setTimeout(() => foxwrapper.classList.remove('lying'), 5000 + Math.random() * 5000);
+          setTimeout(() => {
+            foxwrapper.classList.remove('lying');
+            isLying = false 
+          }, 15000 + Math.random() * 5000);
         }
       }
     }
@@ -107,11 +111,21 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         foxCurrentX = desiredTarget;
         if (foxState === 'following') foxState = 'idle';
-        setWalkingState(false);
+       setWalkingState(false);
       }
       foxwrapper.style.left = `${foxCurrentX}px`;
       requestAnimationFrame(animateFox);
     } 
+    function updateAge() {
+      const birth = new Date(2011, 5, 20, 22, 10, 0);
+      const now = new Date();
+      const diffMs = now - birth;
+      const msPerYear  = 31536000 *1000
+      const age = diffMs / msPerYear;
+      document.getElementById('age-counter').textContent = age.toFixed(10);
+      requestAnimationFrame(updateAge);
+    }
+    updateAge();
   function animateIndicator() {
     const barWidth = footerBar.offsetWidth;
     const lineWidth = indicator.offsetWidth;
