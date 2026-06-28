@@ -26,7 +26,7 @@ document.querySelector('.topbar-center').addEventListener('click', (e) => {
 document.addEventListener('click', () => popup.classList.remove('open'));
 document.querySelector('.popup-today-empty').addEventListener('click', (e) =>{
     e.stopPropagation();
-    window.open('/aplications/kalenderapp.html', 'blanc');
+    document.getElementById('kalender-container').style.display = 'block';
 });
 popup.addEventListener('click', (e) => e.stopPropagation());
 

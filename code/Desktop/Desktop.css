@@ -10,3 +10,20 @@
     background-repeat: no-repeat;
     z-index: -1;
 }
+
+.app-container {
+  position: fixed;
+  top: 80px;
+  left: 200px;
+  width: 900px;
+  height: 600px;
+  background: #0a0a0a;
+  border: 1px solid rgba(187, 255, 156, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+

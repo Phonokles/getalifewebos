@@ -1,54 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Have a life WebOS -- Desktop</title>
-    <link rel="stylesheet" href="Desktop.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Have a life WebOS -- Desktop</title>
+  <link rel="stylesheet" href="Desktop.css">
 </head>
 <body>
+
   <div class="topbar">
-  <div class="topbar-center">
-    <span id="topbar-date"></span>
-    <span class="topbar-sep">| </span>
-    <span id="topbar-time"></span>
-    <div class="clock-popup" id="clock-popup">
-  <div class="popup-left">
-    <div class="popup-bell">x</div>
-    <div class="popup-no-notif">Keine Benachrichtigungen</div>
-    <div class="popup-dnd">
-      <span>Nicht stören</span>
-      <div class="dnd-toggle" id="dnd-toggle">
-        <div class="dnd-knob"></div>
+    <div class="topbar-center">
+      <span id="topbar-date"></span>
+      <span class="topbar-sep">   </span>
+      <span id="topbar-time"></span>
+    </div>
+  </div>
+
+  <div class="clock-popup" id="clock-popup">
+    <div class="popup-left">
+      <div class="popup-bell">🔔</div>
+      <div class="popup-no-notif">Keine Benachrichtigungen</div>
+      <div class="popup-dnd">
+        <span>Nicht stören</span>
+        <div class="dnd-toggle" id="dnd-toggle">
+          <div class="dnd-knob"></div>
+        </div>
+      </div>
+    </div>
+    <div class="popup-right">
+      <div class="popup-date-big" id="popup-date-big"></div>
+      <div class="popup-calendar" id="popup-calendar"></div>
+      <div class="popup-today">
+        <div class="popup-today-label">Heute</div>
+        <div class="popup-today-empty">Keine Termine</div>
       </div>
     </div>
   </div>
-  <div class="popup-right">
-    <div class="popup-date-big" id="popup-date-big"></div>
-    <div class="popup-calendar" id="popup-calendar"></div>
-    <div class="popup-today">
-      <div class="popup-today-label">Heute</div>
-      <div class="popup-today-empty">Keine Termine</div>
+
+  <div class="wallpaper" id="wallpaper"></div>
+
+  <footer class="footer">
+    <div class="fox-wrapper" id="fox-wrapper">
+      <img src="../assets/red_idle_8fps.gif" id="fox-idle" class="fox-frame fox-idle" alt="fox idle">
+      <img src="../assets/red_lie_8fps.gif" id="fox-lie" class="fox-frame fox-lie" alt="fox lie">
+      <img src="../assets/red_walk_8fps.gif" id="fox-walk" class="fox-frame fox-walk" alt="fox walk">
     </div>
-  </div>
-</div>
-  </div>
-</div>
-<div class="wallpaper" id="wallpaper"></div>
-<footer class="footer">
-      <div class="fox-wrapper" id="fox-wrapper">
-    <img src="../assets/red_idle_8fps.gif" id="fox-idle" class="fox-frame fox-idle" alt="fox idle">
-    <img src="../assets/red_lie_8fps.gif" id="fox-lie" class="fox-frame fox-lie" alt="fox lie">
-    <img src="../assets/red_walk_8fps.gif" id="fox-walk" class="fox-frame fox-walk" alt="fox walk">
-  </div>
-  <div class="footer-indicator" id="footer-indicator"></div>
-</footer>
-<link rel="stylesheet" href="taskbar/taskbar.css">
-<script src="taskbar/taskbar.js"></script>    
-<link rel="stylesheet" href="topbar/topbar.css">
-<script src="topbar/topbar.js"></script>
+    <div class="footer-indicator" id="footer-indicator"></div>
+  </footer>
+
+  <link rel="stylesheet" href="taskbar/taskbar.css">
+  <script src="taskbar/taskbar.js"></script>
+  <link rel="stylesheet" href="topbar/topbar.css">
+  <script src="topbar/topbar.js"></script>
+
 </body>
 </html>
