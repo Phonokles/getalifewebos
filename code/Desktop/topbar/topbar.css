@@ -24,3 +24,134 @@
   display: inline-block;
   width: 5px;
 }
+.topbar-center{
+    cursor: pointer;
+}
+
+.clock-popup {
+    position: fixed;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius:12px;
+    display: none;
+    gap:0;
+    z-index: 999998;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    width: 580px;
+}
+
+.clock-popup.open {
+    display: flex;
+}
+.popup-no-notif{
+font-size:0.85rem;
+color: rgba(255, 255, 255, 0.5);
+text-align:center;
+}
+.popup-dnd{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+.dnd-toggle{
+    width: 36xp;
+    height: 20px;
+    background: rgba(255,255,255,0.15);   
+    border-radius: 1px;
+    position: realitive;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.dnd-toggle.active {
+    background: #1cb349
+}
+
+.dnd-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height:14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.3s;
+}
+
+.dnd-toggle.active .dnd-knob {
+    left: 19px;
+}
+.popup-right {
+  flex: 1;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-date-big {
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: #fff;
+}
+
+.popup-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  font-size: 0.78rem;
+}
+
+.cal-header {
+  text-align: center;
+  color: rgba(255,255,255,0.4);
+  padding: 4px 0;
+  font-size: 0.72rem;
+}
+
+.cal-day {
+  text-align: center;
+  padding: 5px 2px;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.6);
+  cursor: default;
+}
+
+.cal-day.today {
+  background: #5bb91c;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cal-day.other-month {
+  color: rgba(255,255,255,0.2);
+}
+
+.popup-today {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.popup-today-label {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+
+.popup-today-empty {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.3);
+  font-style: italic;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.popup-today-empty:hover {
+    color: rgba(255,255,255,0.7)
+}
