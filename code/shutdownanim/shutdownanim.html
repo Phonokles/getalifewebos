@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Have a Life WebOS -- Shutdown</title>
+    <link rel="stylesheet" href="shutdownanim.css">
+  </head>
+  <body>
+
+    <div class="boot-container" id="boot-container">
+
+      <div class="boot-checklist" id="boot-checklist">
+        <div class="checklist-title">SYSTEM SHUTDOWN</div>
+        <ul class="checklist">
+          <li class="check-item" id="check-0">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">saving user session...</span>
+          </li>
+          <li class="check-item" id="check-1">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">stopping services...</span>
+          </li>
+          <li class="check-item" id="check-2">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">unmounting filesystem...</span>
+          </li>
+          <li class="check-item" id="check-3">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">flushing write cache...</span>
+          </li>
+          <li class="check-item" id="check-4">
+            <span class="check-box">[ ]</span>
+            <span class="check-text">powering off...</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="boot-spinner-wrapper">
+        <div class="boot-spinner"></div>
+      </div>
+
+    </div>
+
+    <div class="blackout" id="blackout"></div>
+
+    <div class="boot-btn-wrapper" id="boot-btn-wrapper">
+      <button class="boot-btn" onclick="window.location.href='../bootanim/bootanim.html'">Boot</button>
+    </div>
+
+    <script src="Shutdownanim.js"></script>
+  </body>
+</html>

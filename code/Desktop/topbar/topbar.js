@@ -23,7 +23,10 @@ document.querySelector('.topbar-center').addEventListener('click', (e) => {
   if (popup.classList.contains('open')) buildCalendar();
 });
 
-document.addEventListener('click', () => popup.classList.remove('open'));
+document.addEventListener('click', () => {
+    popup.classList.remove('open');
+    powerPopup.classList.remove('open');
+});
 document.querySelector('.popup-today-empty').addEventListener('click', (e) =>{
     e.stopPropagation();
     document.getElementById('kalender-container').style.display = 'block';
@@ -76,3 +79,26 @@ function buildCalendar() {
     cal.appendChild(d);
   }
 }
+const powerBtn = document.getElementById('power-btn');
+const powerPopup = document.getElementById('power-popup');
+
+powerBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  powerPopup.classList.toggle('open');
+  popup.classList.remove('open');
+});
+
+powerPopup.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('opt-shutdown').addEventListener('click', () => {
+  window.location.href = '../shutdownanim/shutdownanim.html';
+});
+
+document.getElementById('opt-lock').addEventListener('click', () => {
+  lockScreen();
+  powerPopup.classList.remove('open');
+});
+
+document.getElementById('opt-reboot').addEventListener('click', () => {
+    window.location.href = '../shutdownanim/shutdownanim.html?reboot=1';
+});
