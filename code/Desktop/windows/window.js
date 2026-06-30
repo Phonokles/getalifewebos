@@ -94,7 +94,7 @@ function openWindow(id, title, src) {
   win.style.cssText = `left:${startX}px; top:${startY}px; width:720px; height:520px;`;
 
   win.innerHTML = `
-    <div class="resize-handle resize-n"  data-dir="n"></div>
+<div class="resize-handle resize-n"  data-dir="n"></div>
     <div class="resize-handle resize-s"  data-dir="s"></div>
     <div class="resize-handle resize-e"  data-dir="e"></div>
     <div class="resize-handle resize-w"  data-dir="w"></div>
@@ -104,8 +104,12 @@ function openWindow(id, title, src) {
     <div class="resize-handle resize-sw" data-dir="sw"></div>
     <div class="window-titlebar">
       <div class="window-controls">
-        <button class="window-btn close"    title="Schließen"></button>
-        <button class="window-btn minimize" title="Minimieren"></button>
+        <button class="window-btn close" title="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <button class="window-btn minimize" title="Minimieren">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 18h12"/></svg>
+        </button>
       </div>
       <div class="window-title">${title}</div>
     </div>
