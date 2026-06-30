@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="settings-layout">
+
+    <aside class="sidebar">
+      <nav>
+        <button class="nav-item active" data-panel="backgrounds">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          Backgrounds
+        </button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <section class="panel active" id="panel-backgrounds">
+        <h2 class="panel-title">Backgrounds</h2>
+        <div class="wallpaper-grid" id="wallpaper-grid"></div>
+      </section>
+    </main>
+
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>
