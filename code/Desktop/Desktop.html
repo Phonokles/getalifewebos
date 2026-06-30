@@ -42,7 +42,7 @@
   </div>
   <div class="clock-popup" id="clock-popup">
     <div class="popup-left">
-      <div class="popup-bell">🔔</div>
+      <div class="popup-bell">x</div>
       <div class="popup-no-notif">Keine Benachrichtigungen</div>
       <div class="popup-dnd">
         <span>Nicht stören</span>
@@ -70,6 +70,14 @@
       <img src="../assets/red_walk_8fps.gif" id="fox-walk" class="fox-frame fox-walk" alt="fox walk">
     </div>
     <div class="footer-indicator" id="footer-indicator"></div>
+      <div class="taskbar-apps">
+      <button class="taskbar-app-btn" onclick="openSettings()" title="Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
   </footer>
 
   <link rel="stylesheet" href="taskbar/taskbar.css">
@@ -82,5 +90,7 @@
   </div>
   <link rel="stylesheet" href="../lock/lock.css">
   <script src="../lock/lock.js"></script>
+  <link rel="stylesheet" href="windows/window.css">
+  <script src="windows/window.js"></script>
 </body>
 </html>
