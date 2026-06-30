@@ -4,13 +4,28 @@
     box-sizing: border-box;
 }
 
+/* ── Theme Variablen (eigenes iframe-Dokument) ────────── */
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+  --bg-rgb-soft: 14, 14, 14;
+  --bg-rgb-softer: 26, 26, 26;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
+
 html,body{
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #0e0e0e;
-    color: rgba(255,255,255,0.75);
-    font-family: 'Bitcout','Corier New', monospac;
+    background: rgb(var(--bg-rgb-soft));
+    color: rgba(var(--fg-rgb),0.75);
+    font-family: 'Bitcount', 'Courier New', monospace;
 }
 
 .settings-layout{
@@ -20,11 +35,12 @@ html,body{
 }
 
 .sidebar{
-    width: 168x;
+    width: 168px;
     flex-shrink: 0;
-    background: #0a0a0a;
-    border-right: 1px solid rgba(255,255,255,0.06);
-    padding: flex;
+    background: rgb(var(--bg-rgb));
+    border-right: 1px solid rgba(var(--fg-rgb),0.06);
+    padding: 16px 8px;
+    display: flex;
     flex-direction: column;
     gap: 4px;
 }
@@ -38,7 +54,7 @@ html,body{
   border: none;
   border-radius: 7px;
   background: none;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(var(--fg-rgb), 0.45);
   font-family: 'Bitcount', 'Courier New', monospace;
   font-size: 0.78rem;
   letter-spacing: 1.5px;
@@ -54,13 +70,13 @@ html,body{
 }
  
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
+  background: rgba(var(--fg-rgb), 0.05);
+  color: rgba(var(--fg-rgb), 0.7);
 }
  
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(var(--fg-rgb), 0.08);
+  color: rgba(var(--fg-rgb), 0.9);
 }
  
 .nav-item.active svg {
@@ -73,7 +89,7 @@ html,body{
   overflow-y: auto;
   padding: 24px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(var(--fg-rgb),0.1) transparent;
 }
  
 .panel {
@@ -87,7 +103,7 @@ html,body{
 .panel-title {
   font-size: 0.7rem;
   letter-spacing: 4px;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(var(--fg-rgb), 0.3);
   margin-bottom: 20px;
   text-transform: uppercase;
 }
@@ -100,7 +116,7 @@ html,body{
  
 .wallpaper-card {
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
@@ -111,13 +127,13 @@ html,body{
 }
  
 .wallpaper-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(var(--fg-rgb), 0.25);
   transform: translateY(-2px);
 }
  
 .wallpaper-card.active {
-  border-color: rgba(255, 255, 255, 0.75);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.75);
+  border-color: rgba(var(--fg-rgb), 0.75);
+  box-shadow: 0 0 0 1px rgba(var(--fg-rgb),0.75);
 }
  
 .wallpaper-card img {
@@ -131,10 +147,69 @@ html,body{
   padding: 6px 10px;
   font-size: 0.68rem;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.4);
-  background: #111;
+  color: rgba(var(--fg-rgb), 0.4);
+  background: rgb(var(--bg-rgb-softer));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
- 
+
+/* ── Theme Grid ──────────────────────────────────────── */
+.theme-grid {
+  display: flex;
+  gap: 14px;
+}
+
+.theme-card {
+  width: 140px;
+  background: none;
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.theme-card:hover {
+  border-color: rgba(var(--fg-rgb), 0.25);
+  transform: translateY(-2px);
+}
+
+.theme-card.active {
+  border-color: rgba(var(--fg-rgb), 0.75);
+  box-shadow: 0 0 0 1px rgba(var(--fg-rgb),0.75);
+}
+
+.theme-swatch {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.theme-swatch.dark  { background: #0a0a0a; }
+.theme-swatch.light { background: #ffffff; }
+
+.theme-swatch span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.theme-swatch.dark span:nth-child(1)  { background: #2a2a2a; }
+.theme-swatch.dark span:nth-child(2)  { background: #444; }
+.theme-swatch.light span:nth-child(1) { background: #e2e2e2; }
+.theme-swatch.light span:nth-child(2) { background: #cfcfcf; }
+
+.theme-card span.theme-label {
+  padding: 6px 10px;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.4);
+  background: rgb(var(--bg-rgb-softer));
+}

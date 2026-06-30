@@ -20,6 +20,13 @@
           </svg>
           Backgrounds
         </button>
+        <button class="nav-item" data-panel="themes">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>
+          </svg>
+          Themes
+        </button>
       </nav>
     </aside>
 
@@ -27,6 +34,20 @@
       <section class="panel active" id="panel-backgrounds">
         <h2 class="panel-title">Backgrounds</h2>
         <div class="wallpaper-grid" id="wallpaper-grid"></div>
+      </section>
+
+      <section class="panel" id="panel-themes">
+        <h2 class="panel-title">Themes</h2>
+        <div class="theme-grid" id="theme-grid">
+          <button class="theme-card" data-theme="dark">
+            <div class="theme-swatch dark"><span></span><span></span></div>
+            <span class="theme-label">Dark</span>
+          </button>
+          <button class="theme-card" data-theme="light">
+            <div class="theme-swatch light"><span></span><span></span></div>
+            <span class="theme-label">Light</span>
+          </button>
+        </div>
       </section>
     </main>
 

@@ -3,7 +3,7 @@ const wallpapers = [
     'dayforrest.jpg'
 ];
 
-const THUMB_PATH = '../../../Wallpapers';
+const THUMB_PATH = '../../../Wallpapers/';
 
 function renderWallpapers() {
   const grid = document.getElementById('wallpaper-grid');
@@ -34,6 +34,25 @@ function applyWallpaper(file, card) {
   window.parent.postMessage({ type: 'setWallpaper', file }, '*');
 }
 
+function applyTheme(theme, card) {
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('theme', theme);
+  window.parent.postMessage({ type: 'setTheme', theme }, '*');
+}
+
+function setupThemeCards() {
+  const current = localStorage.getItem('theme') || 'dark';
+  document.documentElement.dataset.theme = current;
+
+  document.querySelectorAll('.theme-card').forEach(card => {
+    if (card.dataset.theme === current) card.classList.add('active');
+    card.addEventListener('click', () => applyTheme(card.dataset.theme, card));
+  });
+}
+
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -46,4 +65,4 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 });
  
 renderWallpapers();
- 
+setupThemeCards();
