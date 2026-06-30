@@ -1,0 +1,124 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0000;
+  color: #ffffff;
+  font-family: 'Bitcount', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.crash-container {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.crash-glitch {
+  position: relative;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: 2.6rem;
+  letter-spacing: 4px;
+  color: #ff2222;
+  animation: glitchShake 2.5s infinite;
+}
+
+@keyframes glitchShake {
+  0%, 93%, 100% { transform: translate(0, 0); }
+  94% { transform: translate(-2px, 1px); }
+  95% { transform: translate(2px, -1px); }
+  96% { transform: translate(-1px, 2px); }
+  97% { transform: translate(1px, -2px); }
+}
+
+.crash-sub {
+  margin-top: 18px;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Vollbild "dead" Bild ── */
+.dead-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+.dead-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.dead-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Boot-Button ── */
+.boot-btn-wrapper {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  opacity: 0;
+  animation: fadeInBtn 0.6s ease 5.6s forwards;
+}
+
+@keyframes fadeInBtn {
+  to { opacity: 1; }
+}
+
+.boot-btn {
+  background: none;
+  border: 1px solid rgba(255, 80, 80, 0.5);
+  color: #ff8080;
+  font-family: 'Bitcount', 'Courier New', monospace;
+  font-size: 1rem;
+  letter-spacing: 5px;
+  padding: 14px 44px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.boot-btn:hover {
+  background: rgba(255, 80, 80, 0.08);
+  border-color: #ff8080;
+}
+
+.bg-splat {
+  position: fixed;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180, 10, 10, 0.5) 0%, rgba(120, 0, 0, 0.2) 50%, transparent 75%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: splatPop 0.5s ease forwards;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes splatPop {
+  to { transform: translate(-50%, -50%) scale(var(--s, 1)); }
+}

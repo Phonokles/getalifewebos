@@ -88,6 +88,11 @@ text-align:center;
 .dnd-toggle.active .dnd-knob {
     left: 19px;
 }
+.popup-left {
+  width: 180px;
+  flex-shrink: 0;
+  padding: 20px 20px 20px 24px;
+}
 .popup-right {
   flex: 1;
   padding: 20px 24px;
@@ -105,8 +110,19 @@ text-align:center;
 .popup-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 4px;
   font-size: 0.78rem;
+  max-width: 280px;
+}
+
+.cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: rgba(var(--fg-rgb),0.6);
+  cursor: default;
 }
 
 .cal-header {
@@ -116,13 +132,6 @@ text-align:center;
   font-size: 0.72rem;
 }
 
-.cal-day {
-  text-align: center;
-  padding: 5px 2px;
-  border-radius: 50%;
-  color: rgba(var(--fg-rgb),0.6);
-  cursor: default;
-}
 
 .cal-day.today {
   background: #5bb91c;

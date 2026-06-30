@@ -27,10 +27,6 @@ document.addEventListener('click', () => {
     popup.classList.remove('open');
     powerPopup.classList.remove('open');
 });
-document.querySelector('.popup-today-empty').addEventListener('click', (e) =>{
-    e.stopPropagation();
-    document.getElementById('kalender-container').style.display = 'block';
-});
 popup.addEventListener('click', (e) => e.stopPropagation());
 
 document.getElementById('dnd-toggle').addEventListener('click', (e) => {
@@ -44,9 +40,9 @@ function buildCalendar() {
   const year = now.getFullYear();
   const month = now.getMonth();
 
-  const DAYS = ['M','D','M','D','F','S','S'];
-  const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
-  const DAYS_DE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const DAYS = ['M','T','W','Th','F','S','S'];
+  const MONTHS_DE = ['January','February','March','April','May','June','July','August','September','Oktober','November','Dezember'];
+  const DAYS_DE = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
   document.getElementById('popup-date-big').textContent =
     `${DAYS_DE[now.getDay()]}\n${now.getDate()}. ${MONTHS_DE[month]} ${year}`;
