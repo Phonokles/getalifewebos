@@ -131,5 +131,17 @@ function openWindow(id, title, src) {
 }
 
 function openSettings() {
-  openWindow('win-settings', 'SETTINGS', 'application/settings/settings.html');
+  openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html');
 }
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'setWallpaper') {
+    const wallpaper = document.getElementById('wallpaper');
+    if (wallpaper) {
+      wallpaper.style.backgroundImage = `url(../Wallpapers/${e.data.file})`;
+    }
+  }
+  if (e.data?.type === 'setTheme') {
+    document.documentElement.dataset.theme = e.data.theme;
+    localStorage.setItem('theme', e.data.theme);
+  }
+});

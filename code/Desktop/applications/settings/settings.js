@@ -1,5 +1,6 @@
 const wallpapers = [
     'Nightforrest.jpg',
+    'dayforrest.jpg'
 ];
 
 const THUMB_PATH = '../../../Wallpapers';

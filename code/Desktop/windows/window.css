@@ -33,15 +33,15 @@
 .window-btn {
   width: 13px;
   height: 13px;
-  border-radius: 50%;
+  border-radius: 30%;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   transition: filter 0.15s;
 }
 .window-btn:hover { filter: brightness(1.35); }
-.window-btn.close    { background: #ff5f57; }
-.window-btn.minimize { background: #ffbd2e; }
+.window-btn.close    { background: #c5cdff; }
+.window-btn.minimize { background: #d4ffea; }
 
 .window-title {
   flex: 1;

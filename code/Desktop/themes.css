@@ -1,0 +1,13 @@
+:root {
+  --fg-rgb: 255, 255, 255;       /* Text/Vordergrund: weiß */
+  --bg-rgb: 10, 10, 10;          /* Hauptfläche: fast schwarz */
+  --bg-rgb-soft: 17, 17, 17;     /* z.B. Fenster-Body */
+  --bg-rgb-softer: 26, 26, 26;   /* z.B. Titlebar/Popups */
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
