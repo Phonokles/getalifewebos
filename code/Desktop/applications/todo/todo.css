@@ -1,0 +1,210 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Theme Variablen (eigenes iframe-Dokument) ──────────── */
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+  --bg-rgb-soft: 14, 14, 14;
+  --bg-rgb-softer: 26, 26, 26;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgb(var(--bg-rgb-soft));
+  color: rgba(var(--fg-rgb), 0.9);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.todo-app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-header {
+  flex-shrink: 0;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.07);
+}
+
+.todo-title {
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  color: rgba(var(--fg-rgb), 0.4);
+  text-transform: uppercase;
+}
+
+.todo-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.15) transparent;
+}
+
+.todo-section {
+  margin-bottom: 16px;
+}
+
+.todo-section:last-child {
+  margin-bottom: 4px;
+}
+
+.todo-section-title {
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(var(--fg-rgb), 0.3);
+  margin-bottom: 6px;
+}
+
+.todo-empty {
+  font-size: 0.72rem;
+  color: rgba(var(--fg-rgb), 0.25);
+  font-style: italic;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.82rem;
+  color: rgba(var(--fg-rgb), 0.8);
+}
+
+.todo-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--bg-rgb));
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.todo-check svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.todo-item.done .todo-check {
+  background: rgb(var(--fg-rgb));
+  border-color: rgb(var(--fg-rgb));
+}
+
+.todo-item.done .todo-check svg {
+  opacity: 1;
+}
+
+.todo-item.done .todo-label {
+  text-decoration: line-through;
+  color: rgba(var(--fg-rgb), 0.35);
+}
+
+.todo-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.todo-counter-value {
+  font-size: 0.74rem;
+  color: rgba(var(--fg-rgb), 0.45);
+  min-width: 28px;
+  text-align: center;
+}
+
+.todo-item.done .todo-counter-value {
+  color: rgba(var(--fg-rgb), 0.9);
+}
+
+.todo-counter-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  background: rgba(var(--fg-rgb), 0.04);
+  color: rgba(var(--fg-rgb), 0.6);
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.todo-counter-btn:hover {
+  background: rgba(var(--fg-rgb), 0.1);
+  color: rgb(var(--fg-rgb));
+}
+
+.todo-add-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(var(--fg-rgb), 0.07);
+}
+
+.todo-new-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(var(--fg-rgb), 0.05);
+  border: 1px solid rgba(var(--fg-rgb), 0.1);
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: rgba(var(--fg-rgb), 0.85);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.todo-new-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.3);
+}
+
+.todo-add-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  background: rgba(var(--fg-rgb), 0.85);
+  color: rgb(var(--bg-rgb));
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.todo-add-btn:hover {
+  background: rgb(var(--fg-rgb));
+}

@@ -72,6 +72,18 @@
   </div>
 
   <div class="wallpaper" id="wallpaper"></div>
+  <div class="todo-widget" id="todo-widget">
+  <div class="todo-header">
+    <span class="todo-title">Todo</span>
+  </div>
+  <div class="todo-body" id="todo-body"></div>
+  <div class="todo-add-row">
+    <input type="text" id="todo-new-input" class="todo-new-input" placeholder="add a todo...">
+    <button class="todo-add-btn" id="todo-add-btn">+</button>
+  </div>
+</div>
+<link rel="stylesheet" href="widgets/todo.css">
+<script src="widgets/todo.js"></script>
 
   <footer class="footer">
     
@@ -102,6 +114,19 @@
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="8 6 2 12 8 18"/>
     <polyline points="16 6 22 12 16 18"/>
+  </svg>
+</button>
+<button class="taskbar-app-btn" onclick="openTodo()" title="Todo">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="3" width="16" height="18" rx="2"/>
+    <path d="M8 8h8M8 12h8M8 16h5"/>
+  </svg>
+</button>
+<button class="taskbar-app-btn" onclick="openTerminal()" title="Terminal">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="2"/>
+    <path d="M7 9l3 3-3 3"/>
+    <line x1="12" y1="15" x2="16" y2="15"/>
   </svg>
 </button>
     </div>

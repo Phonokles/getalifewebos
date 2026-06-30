@@ -1,0 +1,192 @@
+.todo-widget {
+  position: fixed;
+  top: 30px;
+  right: 16px;
+  width: 260px;
+  max-height: calc(100vh - 70px);
+  background: rgba(var(--bg-rgb-softer), 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+.todo-header {
+  flex-shrink: 0;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.07);
+}
+
+.todo-title {
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  color: rgba(var(--fg-rgb), 0.4);
+  text-transform: uppercase;
+}
+
+.todo-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.15) transparent;
+}
+
+.todo-section {
+  margin-bottom: 14px;
+}
+
+.todo-section:last-child {
+  margin-bottom: 4px;
+}
+
+.todo-section-title {
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(var(--fg-rgb), 0.3);
+  margin-bottom: 6px;
+}
+
+.todo-empty {
+  font-size: 0.7rem;
+  color: rgba(var(--fg-rgb), 0.25);
+  font-style: italic;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.78rem;
+  color: rgba(var(--fg-rgb), 0.8);
+}
+
+.todo-check {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--bg-rgb));
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.todo-check svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.todo-item.done .todo-check {
+  background: rgb(var(--fg-rgb));
+  border-color: rgb(var(--fg-rgb));
+}
+
+.todo-item.done .todo-check svg {
+  opacity: 1;
+}
+
+.todo-item.done .todo-label {
+  text-decoration: line-through;
+  color: rgba(var(--fg-rgb), 0.35);
+}
+
+.todo-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.todo-counter-value {
+  font-size: 0.7rem;
+  color: rgba(var(--fg-rgb), 0.45);
+  min-width: 26px;
+  text-align: center;
+}
+
+.todo-item.done .todo-counter-value {
+  color: rgba(var(--fg-rgb), 0.9);
+}
+
+.todo-counter-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  background: rgba(var(--fg-rgb), 0.04);
+  color: rgba(var(--fg-rgb), 0.6);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.todo-counter-btn:hover {
+  background: rgba(var(--fg-rgb), 0.1);
+  color: rgb(var(--fg-rgb));
+}
+
+.todo-add-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(var(--fg-rgb), 0.07);
+}
+
+.todo-new-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(var(--fg-rgb), 0.05);
+  border: 1px solid rgba(var(--fg-rgb), 0.1);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: rgba(var(--fg-rgb), 0.85);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.todo-new-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.3);
+}
+
+.todo-add-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  background: rgba(var(--fg-rgb), 0.85);
+  color: rgb(var(--bg-rgb));
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.todo-add-btn:hover {
+  background: rgb(var(--fg-rgb));
+}

@@ -1,0 +1,85 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.term {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: rgb(var(--bg-rgb));
+  color: rgba(var(--fg-rgb), 0.85);
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  cursor: text;
+}
+
+.term-output {
+  flex: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.15) transparent;
+}
+
+.term-line {
+  margin: 0;
+}
+
+.term-line.cmd {
+  color: rgba(var(--fg-rgb), 0.5);
+}
+
+.term-line.cmd::before {
+  content: 'user@webos:~$ ';
+  opacity: 0.5;
+}
+
+.term-line.err {
+  color: #ff6b6b;
+}
+
+.term-input-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.term-prompt {
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.term-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: rgba(var(--fg-rgb), 0.92);
+  font-family: inherit;
+  font-size: inherit;
+}

@@ -167,9 +167,14 @@ function openSettings() {
 function openCalculator() {
   openWindow('win-calculator', 'CALCULATOR', 'applications/calculator/calculator.html', 300, 440);
 }
-
+function openTodo() {
+  openWindow('win-todo', 'TODO', 'applications/todo/todo.html', 300, 460);
+}
 function openCode() {
   openWindow('win-code', 'CODE', 'applications/code/code.html', 560, 460);
+}
+function openTerminal() {
+  openWindow('win-terminal', 'TERMINAL', 'applications/terminal/terminal.html', 480, 360);
 }
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
