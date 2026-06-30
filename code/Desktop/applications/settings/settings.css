@@ -4,7 +4,6 @@
   box-sizing: border-box;
 }
 
-/* ── Theme Variablen (eigenes iframe-Dokument) ──────────── */
 :root {
   --fg-rgb: 255, 255, 255;
   --bg-rgb: 10, 10, 10;
@@ -28,7 +27,7 @@ html, body {
   font-family: 'Bitcount', 'Courier New', monospace;
 }
 
-/* ── Layout ──────────────────────────────────────────────── */
+
 .settings-layout {
   display: flex;
   width: 100%;
@@ -143,7 +142,6 @@ html, body {
   margin-bottom: 22px;
 }
 
-/* ── Backgrounds Panel ───────────────────────────────────── */
 .wallpaper-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -219,7 +217,6 @@ html, body {
   background: rgb(var(--fg-rgb));
 }
 
-/* ── Themes Panel ────────────────────────────────────────── */
 .setting-row {
   display: flex;
   align-items: center;
@@ -318,7 +315,6 @@ html, body {
   transform: rotate(0deg) scale(1);
 }
 
-/* ── Pets Panel ──────────────────────────────────────────── */
 .pets-list {
   display: flex;
   flex-direction: column;

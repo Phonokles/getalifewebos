@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="code.css">
+</head>
+<body>
+  <div class="code-app">
+
+    <div class="lang-picker" id="lang-picker">
+      <div class="lang-picker-title">Choose file type</div>
+      <div class="lang-grid">
+        <button class="lang-card" data-lang="python">Python<span>.py</span></button>
+        <button class="lang-card" data-lang="cpp">C++<span>.cpp</span></button>
+        <button class="lang-card" data-lang="txt">Text<span>.txt</span></button>
+        <button class="lang-card" data-lang="html">HTML<span>.html</span></button>
+        <button class="lang-card" data-lang="css">CSS<span>.css</span></button>
+        <button class="lang-card" data-lang="js">JavaScript<span>.js</span></button>
+        <button class="lang-card" data-lang="rust">Rust<span>.rs</span></button>
+      </div>
+    </div>
+
+    <div class="editor-view" id="editor-view">
+      <div class="editor-topbar">
+        <input type="text" class="editor-filename" id="editor-filename" spellcheck="false">
+        <div class="editor-actions">
+          <button class="editor-btn" id="btn-change-type">Change type</button>
+          <button class="editor-btn editor-btn-primary" id="btn-download">Download</button>
+        </div>
+      </div>
+      <textarea class="editor-textarea" id="editor-textarea" spellcheck="false" placeholder="start typing..."></textarea>
+    </div>
+
+  </div>
+
+  <script src="code.js"></script>
+</body>
+</html>

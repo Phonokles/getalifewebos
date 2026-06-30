@@ -47,7 +47,6 @@ html, body {
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* ── Vollbild "dead" Bild ── */
 .dead-overlay {
   position: fixed;
   inset: 0;
@@ -73,7 +72,6 @@ html, body {
   display: block;
 }
 
-/* ── Boot-Button ── */
 .boot-btn-wrapper {
   position: fixed;
   bottom: 70px;

@@ -2,8 +2,27 @@ const MIN_W = 360;
 const MIN_H = 280;
 let topZ   = 1000;
 
+let currentWorkspace = 1;
+
 function bringToFront(win) {
   win.style.zIndex = ++topZ;
+}
+
+function updateWindowVisibility(win) {
+  const ws = parseInt(win.dataset.workspace || '1', 10);
+  const minimized = win.dataset.minimized === 'true';
+  win.style.display = (!minimized && ws === currentWorkspace) ? 'flex' : 'none';
+}
+
+function switchWorkspace(n) {
+  if (n === currentWorkspace) return;
+  currentWorkspace = n;
+
+  document.querySelectorAll('.app-window').forEach(updateWindowVisibility);
+
+  document.querySelectorAll('.ws-dot').forEach(dot => {
+    dot.classList.toggle('active', parseInt(dot.dataset.ws, 10) === currentWorkspace);
+  });
 }
 
 function setupDrag(win) {
@@ -76,22 +95,27 @@ function setupResize(win) {
   });
 }
 
-function openWindow(id, title, src) {
-  // Wenn schon vorhanden: wieder anzeigen
+function openWindow(id, title, src, width = 720, height = 520) {
+  // Wenn schon vorhanden: wieder anzeigen (ggf. Workspace wechseln)
   const existing = document.getElementById(id);
   if (existing) {
-    existing.style.display = 'flex';
+    existing.dataset.minimized = 'false';
+    const ws = parseInt(existing.dataset.workspace || '1', 10);
+    if (ws !== currentWorkspace) switchWorkspace(ws);
+    updateWindowVisibility(existing);
     bringToFront(existing);
     return;
   }
 
-  const startX = Math.max(40, Math.floor((window.innerWidth  - 720) / 2));
-  const startY = Math.max(40, Math.floor((window.innerHeight - 520) / 2));
+  const startX = Math.max(40, Math.floor((window.innerWidth  - width) / 2));
+  const startY = Math.max(40, Math.floor((window.innerHeight - height) / 2));
 
   const win = document.createElement('div');
   win.className = 'app-window';
   win.id = id;
-  win.style.cssText = `left:${startX}px; top:${startY}px; width:720px; height:520px;`;
+  win.dataset.workspace = String(currentWorkspace);
+  win.dataset.minimized = 'false';
+  win.style.cssText = `left:${startX}px; top:${startY}px; width:${width}px; height:${height}px;`;
 
   win.innerHTML = `
 <div class="resize-handle resize-n"  data-dir="n"></div>
@@ -126,16 +150,26 @@ function openWindow(id, title, src) {
   win.addEventListener('mousedown', () => bringToFront(win));
 
   win.querySelector('.window-btn.close').addEventListener('click', () => {
+    win.dataset.minimized = 'true';
     win.style.display = 'none';
   });
 
   win.querySelector('.window-btn.minimize').addEventListener('click', () => {
+    win.dataset.minimized = 'true';
     win.style.display = 'none';
   });
 }
 
 function openSettings() {
   openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html');
+}
+
+function openCalculator() {
+  openWindow('win-calculator', 'CALCULATOR', 'applications/calculator/calculator.html', 300, 440);
+}
+
+function openCode() {
+  openWindow('win-code', 'CODE', 'applications/code/code.html', 560, 460);
 }
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
@@ -147,5 +181,10 @@ window.addEventListener('message', (e) => {
   if (e.data?.type === 'setTheme') {
     document.documentElement.dataset.theme = e.data.theme;
     localStorage.setItem('theme', e.data.theme);
+
+    // An alle offenen App-Fenster weiterreichen
+    document.querySelectorAll('.app-window iframe').forEach(frame => {
+      frame.contentWindow.postMessage({ type: 'setTheme', theme: e.data.theme }, '*');
+    });
   }
 });

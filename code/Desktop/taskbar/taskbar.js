@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(animateIndicator);
   }
 
-  // ── Einzelnes Tier ────────────────────────────────────────────
   function createPet(species) {
     const wrapper = document.createElement('div');
     wrapper.className = 'fox-wrapper';
@@ -151,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return state;
   }
 
-  // ── Tier-Bestand pro Spezies verwalten ──────────────────────────
+
   function addPet(species) {
     pets.push(createPet(species));
   }
@@ -185,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Crashout ───────────────────────────────────────────────
   function spawnSplat(x, y, scale) {
     const splat = document.createElement('div');
     splat.className = 'crash-splat';

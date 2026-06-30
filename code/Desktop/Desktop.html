@@ -19,6 +19,14 @@
 <body>
 
   <div class="topbar">
+    <div class="topbar-left">
+  <div class="workspace-switcher" id="workspace-switcher">
+    <button class="ws-dot active" data-ws="1" onclick="switchWorkspace(1)">1</button>
+    <button class="ws-dot" data-ws="2" onclick="switchWorkspace(2)">2</button>
+    <button class="ws-dot" data-ws="3" onclick="switchWorkspace(3)">3</button>
+    <button class="ws-dot" data-ws="4" onclick="switchWorkspace(4)">4</button>
+  </div>
+</div>
     <div class="topbar-center">
       <span id="topbar-date"></span>
       <span class="topbar-sep">   </span>
@@ -75,6 +83,27 @@
   <circle cx="32.82" cy="31.94" r="9.94"/>
     </svg>
       </button>
+      <button class="taskbar-app-btn" onclick="openCalculator()" title="Calculator">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="2" width="16" height="20" rx="2"/>
+    <line x1="8" y1="6" x2="16" y2="6"/>
+    <line x1="8" y1="11" x2="8" y2="11"/>
+    <line x1="12" y1="11" x2="12" y2="11"/>
+    <line x1="16" y1="11" x2="16" y2="11"/>
+    <line x1="8" y1="15" x2="8" y2="15"/>
+    <line x1="12" y1="15" x2="12" y2="15"/>
+    <line x1="16" y1="15" x2="16" y2="15"/>
+    <line x1="8" y1="19" x2="8" y2="19"/>
+    <line x1="12" y1="19" x2="12" y2="19"/>
+    <line x1="16" y1="19" x2="16" y2="19"/>
+  </svg>
+</button>
+<button class="taskbar-app-btn" onclick="openCode()" title="Code">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="8 6 2 12 8 18"/>
+    <polyline points="16 6 22 12 16 18"/>
+  </svg>
+</button>
     </div>
   </footer>
 

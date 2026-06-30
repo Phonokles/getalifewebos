@@ -165,6 +165,46 @@ text-align:center;
 .popup-today-empty:hover {
     color: rgba(var(--fg-rgb),0.7)
 }
+.topbar-left {
+  position: absolute;
+  left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.workspace-switcher {
+  display: flex;
+  gap: 3px;
+  background: rgba(var(--fg-rgb), 0.05);
+  border-radius: 5px;
+  padding: 2px;
+}
+
+.ws-dot {
+  background: none;
+  border: none;
+  color: rgba(var(--fg-rgb), 0.4);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ws-dot:hover {
+  background: rgba(var(--fg-rgb), 0.1);
+  color: rgb(var(--fg-rgb));
+}
+
+.ws-dot.active {
+  background: rgba(var(--fg-rgb), 0.18);
+  color: rgb(var(--fg-rgb));
+}
 .topbar-right {
   position: absolute;
   right: 8px;
