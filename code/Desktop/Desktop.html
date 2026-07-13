@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -7,40 +7,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Have a life WebOS -- Desktop</title>
+  <title>Have a Life WebOS — Desktop</title>
+  <link rel="stylesheet" href="themes.css">
   <link rel="stylesheet" href="Desktop.css">
-</head>
-    <div class="break-overlay" id="break-overlay">
-    <div class="break-message">look away from the screen<br>for a short time</div>
-    <div class="break-countdown" id="break-countdown"></div>
-  </div>
+  <link rel="stylesheet" href="taskbar/taskbar.css">
+  <link rel="stylesheet" href="topbar/topbar.css">
+  <link rel="stylesheet" href="windows/window.css">
+  <link rel="stylesheet" href="../lock/lock.css">
   <link rel="stylesheet" href="breakreminder/breakreminder.css">
-  <script src="breakreminder/breakreminder.js"></script>
+  <link rel="stylesheet" href="popups/notifications.css">
+  <link rel="stylesheet" href="widgets/todo.css">
+</head>
 <body>
+  <div class="notif-container" id="notif-container"></div>
 
   <div class="topbar">
     <div class="topbar-left">
-  <div class="workspace-switcher" id="workspace-switcher">
-    <button class="ws-dot active" data-ws="1" onclick="switchWorkspace(1)">1</button>
-    <button class="ws-dot" data-ws="2" onclick="switchWorkspace(2)">2</button>
-    <button class="ws-dot" data-ws="3" onclick="switchWorkspace(3)">3</button>
-    <button class="ws-dot" data-ws="4" onclick="switchWorkspace(4)">4</button>
-  </div>
-</div>
+      <div class="workspace-switcher" id="workspace-switcher">
+        <button class="ws-dot active" data-ws="1" onclick="switchWorkspace(1)">1</button>
+        <button class="ws-dot" data-ws="2" onclick="switchWorkspace(2)">2</button>
+        <button class="ws-dot" data-ws="3" onclick="switchWorkspace(3)">3</button>
+        <button class="ws-dot" data-ws="4" onclick="switchWorkspace(4)">4</button>
+      </div>
+    </div>
     <div class="topbar-center">
       <span id="topbar-date"></span>
-      <span class="topbar-sep">   </span>
+      <span class="topbar-sep"> </span>
       <span id="topbar-time"></span>
     </div>
     <div class="topbar-right">
       <button class="power-btn" id="power-btn" title="Systemmenü">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
           <path d="M12 2v7"/>
           <path d="M5.5 5.5A9 9 0 1 0 18.5 5.5"/>
         </svg>
       </button>
     </div>
   </div>
+
   <div class="power-popup" id="power-popup">
     <button class="power-option shutdown" id="opt-shutdown">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v7"/><path d="M5.5 5.5A9 9 0 1 0 18.5 5.5"/></svg>
@@ -55,95 +59,100 @@
       Reboot
     </button>
   </div>
+
   <div class="clock-popup" id="clock-popup">
     <div class="popup-left">
       <div class="popup-no-notif">--no Notifications--</div>
       <div class="popup-dnd">
-        <div class="dnd-toggle" id="dnd-toggle">
-        
-        </div>
+        <div class="dnd-toggle" id="dnd-toggle"></div>
       </div>
     </div>
     <div class="popup-right">
       <div class="popup-date-big" id="popup-date-big"></div>
       <div class="popup-calendar" id="popup-calendar"></div>
-      </div>
     </div>
   </div>
 
   <div class="wallpaper" id="wallpaper"></div>
+
   <div class="todo-widget" id="todo-widget">
-  <div class="todo-header">
-    <span class="todo-title">Todo</span>
+    <div class="todo-header">
+      <span class="todo-title">Todo</span>
+    </div>
+    <div class="todo-body" id="todo-body"></div>
+    <div class="todo-add-row">
+      <input type="text" id="todo-new-input" class="todo-new-input" placeholder="add a todo...">
+      <button class="todo-add-btn" id="todo-add-btn">+</button>
+    </div>
   </div>
-  <div class="todo-body" id="todo-body"></div>
-  <div class="todo-add-row">
-    <input type="text" id="todo-new-input" class="todo-new-input" placeholder="add a todo...">
-    <button class="todo-add-btn" id="todo-add-btn">+</button>
-  </div>
-</div>
-<link rel="stylesheet" href="widgets/todo.css">
-<script src="widgets/todo.js"></script>
+
 
   <footer class="footer">
-    
     <div class="footer-indicator" id="footer-indicator"></div>
-      <div class="taskbar-apps">
+    <div class="taskbar-apps">
       <button class="taskbar-app-btn" onclick="openSettings()" title="Settings">
-      <svg width="15" height="15" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.136" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M45,14.67l-2.76,2a1,1,0,0,1-1,.11L37.65,15.3a1,1,0,0,1-.61-.76l-.66-3.77a1,1,0,0,0-1-.84H30.52a1,1,0,0,0-1,.77l-.93,3.72a1,1,0,0,1-.53.65l-3.3,1.66a1,1,0,0,1-1-.08l-3-2.13a1,1,0,0,0-1.31.12l-3.65,3.74a1,1,0,0,0-.13,1.26l1.87,2.88a1,1,0,0,1,.1.89L16.34,27a1,1,0,0,1-.68.63l-3.85,1.06a1,1,0,0,0-.74,1v4.74a1,1,0,0,0,.8,1l3.9.8a1,1,0,0,1,.72.57l1.42,3.15a1,1,0,0,1-.05.92l-2.13,3.63a1,1,0,0,0,.17,1.24L19.32,49a1,1,0,0,0,1.29.09L23.49,47a1,1,0,0,1,1-.1l3.74,1.67a1,1,0,0,1,.59.75l.66,3.79a1,1,0,0,0,1,.84h4.89a1,1,0,0,0,1-.86l.58-4a1,1,0,0,1,.58-.77l3.58-1.62a1,1,0,0,1,1,.09l3.14,2.12a1,1,0,0,0,1.3-.15L50,45.06a1,1,0,0,0,.09-1.27l-2.08-3a1,1,0,0,1-.09-1l1.48-3.43a1,1,0,0,1,.71-.59L53.77,35a1,1,0,0,0,.8-1V29.42a1,1,0,0,0-.8-1l-3.72-.78a1,1,0,0,1-.73-.62l-1.45-3.65a1,1,0,0,1,.11-.94l2.15-3.14A1,1,0,0,0,50,18l-3.71-3.25A1,1,0,0,0,45,14.67Z"/>
-  <circle cx="32.82" cy="31.94" r="9.94"/>
-    </svg>
+        <svg width="15" height="15" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.136" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M45,14.67l-2.76,2a1,1,0,0,1-1,.11L37.65,15.3a1,1,0,0,1-.61-.76l-.66-3.77a1,1,0,0,0-1-.84H30.52a1,1,0,0,0-1,.77l-.93,3.72a1,1,0,0,1-.53.65l-3.3,1.66a1,1,0,0,1-1-.08l-3-2.13a1,1,0,0,0-1.31.12l-3.65,3.74a1,1,0,0,0-.13,1.26l1.87,2.88a1,1,0,0,1,.1.89L16.34,27a1,1,0,0,1-.68.63l-3.85,1.06a1,1,0,0,0-.74,1v4.74a1,1,0,0,0,.8,1l3.9.8a1,1,0,0,1,.72.57l1.42,3.15a1,1,0,0,1-.05.92l-2.13,3.63a1,1,0,0,0,.17,1.24L19.32,49a1,1,0,0,0,1.29.09L23.49,47a1,1,0,0,1,1-.1l3.74,1.67a1,1,0,0,1,.59.75l.66,3.79a1,1,0,0,0,1,.84h4.89a1,1,0,0,0,1-.86l.58-4a1,1,0,0,1,.58-.77l3.58-1.62a1,1,0,0,1,1,.09l3.14,2.12a1,1,0,0,0,1.3-.15L50,45.06a1,1,0,0,0,.09-1.27l-2.08-3a1,1,0,0,1-.09-1l1.48-3.43a1,1,0,0,1,.71-.59L53.77,35a1,1,0,0,0,.8-1V29.42a1,1,0,0,0-.8-1l-3.72-.78a1,1,0,0,1-.73-.62l-1.45-3.65a1,1,0,0,1,.11-.94l2.15-3.14A1,1,0,0,0,50,18l-3.71-3.25A1,1,0,0,0,45,14.67Z"/>
+          <circle cx="32.82" cy="31.94" r="9.94"/>
+        </svg>
       </button>
       <button class="taskbar-app-btn" onclick="openCalculator()" title="Calculator">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="2" width="16" height="20" rx="2"/>
-    <line x1="8" y1="6" x2="16" y2="6"/>
-    <line x1="8" y1="11" x2="8" y2="11"/>
-    <line x1="12" y1="11" x2="12" y2="11"/>
-    <line x1="16" y1="11" x2="16" y2="11"/>
-    <line x1="8" y1="15" x2="8" y2="15"/>
-    <line x1="12" y1="15" x2="12" y2="15"/>
-    <line x1="16" y1="15" x2="16" y2="15"/>
-    <line x1="8" y1="19" x2="8" y2="19"/>
-    <line x1="12" y1="19" x2="12" y2="19"/>
-    <line x1="16" y1="19" x2="16" y2="19"/>
-  </svg>
-</button>
-<button class="taskbar-app-btn" onclick="openCode()" title="Code">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="8 6 2 12 8 18"/>
-    <polyline points="16 6 22 12 16 18"/>
-  </svg>
-</button>
-<button class="taskbar-app-btn" onclick="openTodo()" title="Todo">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="3" width="16" height="18" rx="2"/>
-    <path d="M8 8h8M8 12h8M8 16h5"/>
-  </svg>
-</button>
-<button class="taskbar-app-btn" onclick="openTerminal()" title="Terminal">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="4" width="18" height="16" rx="2"/>
-    <path d="M7 9l3 3-3 3"/>
-    <line x1="12" y1="15" x2="16" y2="15"/>
-  </svg>
-</button>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2"/>
+          <line x1="8" y1="6" x2="16" y2="6"/>
+          <line x1="8" y1="11" x2="8" y2="11"/>
+          <line x1="12" y1="11" x2="12" y2="11"/>
+          <line x1="16" y1="11" x2="16" y2="11"/>
+          <line x1="8" y1="15" x2="8" y2="15"/>
+          <line x1="12" y1="15" x2="12" y2="15"/>
+          <line x1="16" y1="15" x2="16" y2="15"/>
+          <line x1="8" y1="19" x2="8" y2="19"/>
+          <line x1="12" y1="19" x2="12" y2="19"/>
+          <line x1="16" y1="19" x2="16" y2="19"/>
+        </svg>
+      </button>
+      <button class="taskbar-app-btn" onclick="openCode()" title="Code">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="8 6 2 12 8 18"/>
+          <polyline points="16 6 22 12 16 18"/>
+        </svg>
+      </button>
+      <button class="taskbar-app-btn" onclick="openTodo()" title="Todo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <path d="M8 8h8M8 12h8M8 16h5"/>
+        </svg>
+      </button>
+      <button class="taskbar-app-btn" onclick="openTerminal()" title="Terminal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <path d="M7 9l3 3-3 3"/>
+          <line x1="12" y1="15" x2="16" y2="15"/>
+        </svg>
+      </button>
     </div>
   </footer>
 
-  <link rel="stylesheet" href="themes.css">
-  <link rel="stylesheet" href="taskbar/taskbar.css">
-  <script src="taskbar/taskbar.js"></script>
-  <link rel="stylesheet" href="topbar/topbar.css">
-  <script src="topbar/topbar.js"></script>
+
   <div class="lock-screen" id="lock-screen">
     <img class="lock-avatar" src="../assets/profile.jpg" alt="Profil">
     <button class="unlock-btn" id="unlock-btn">Unlock</button>
   </div>
-  <link rel="stylesheet" href="../lock/lock.css">
+
+
+  <div class="break-overlay" id="break-overlay">
+    <div class="break-message">look away from the screen<br>for a short time</div>
+    <div class="break-countdown" id="break-countdown"></div>
+  </div>
+
+  <script src="taskbar/taskbar.js"></script>
+  <script src="topbar/topbar.js"></script>
   <script src="../lock/lock.js"></script>
-  <link rel="stylesheet" href="windows/window.css">
   <script src="windows/window.js"></script>
+  <script src="widgets/todo.js"></script>
+  <script src="breakreminder/breakreminder.js"></script>
+  <script src="popups/notifications.js"></script>
+  <script src="popups/drinkreminder.js"></script>
+
 </body>
 </html>
