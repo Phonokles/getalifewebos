@@ -152,14 +152,16 @@ html, body {
   color: rgb(var(--fg-rgb));
 }
 
+/* primary action inverts: white button, dark text -- white is the accent */
 .editor-btn-primary {
-  background: #5bb91c;
-  border-color: #5bb91c;
-  color: #fff;
+  background: rgb(var(--fg-rgb));
+  border-color: rgb(var(--fg-rgb));
+  color: rgb(var(--bg-rgb));
 }
 
 .editor-btn-primary:hover {
-  background: #4ea315;
+  box-shadow: 0 0 12px rgba(var(--fg-rgb), 0.5);
+  color: rgb(var(--bg-rgb));
 }
 
 .editor-textarea {

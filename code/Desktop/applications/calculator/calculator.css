@@ -87,23 +87,24 @@ html, body {
 }
 
 .calc-btn.calc-op {
-  color: #5bb91c;
-  border-color: rgba(91, 185, 28, 0.25);
+  color: rgb(var(--fg-rgb));
+  border-color: rgba(var(--fg-rgb), 0.25);
 }
 
 .calc-btn.calc-op:hover {
-  background: rgba(91, 185, 28, 0.12);
-  border-color: rgba(91, 185, 28, 0.4);
+  background: rgba(var(--fg-rgb), 0.12);
+  border-color: rgba(var(--fg-rgb), 0.4);
 }
 
+/* equals inverts: white button, dark glyph -- white is the accent */
 .calc-btn.calc-equals {
-  background: #5bb91c;
-  color: #fff;
-  border-color: #5bb91c;
+  background: rgb(var(--fg-rgb));
+  color: rgb(var(--bg-rgb));
+  border-color: rgb(var(--fg-rgb));
 }
 
 .calc-btn.calc-equals:hover {
-  background: #4ea315;
+  box-shadow: 0 0 12px rgba(var(--fg-rgb), 0.5);
 }
 
 .calc-btn.calc-zero {

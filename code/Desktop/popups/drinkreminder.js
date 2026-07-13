@@ -1,4 +1,4 @@
-const DRINK_INTERVAL = 6 * 60 * 10;
+const DRINK_INTERVAL = 6 * 60 * 1000;
 
 const DRINK_MAP = {
   morning: 'm-drink',

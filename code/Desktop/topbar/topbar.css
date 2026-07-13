@@ -62,16 +62,17 @@ text-align:center;
     color: rgba(var(--fg-rgb), 0.6);
 }
 .dnd-toggle{
-    width: 36xp;
+    width: 36px;
     height: 20px;
-    background: rgba(var(--fg-rgb),0.15);   
-    border-radius: 1px;
-    position: realitive;
+    background: rgba(var(--fg-rgb),0.15);
+    border-radius: 10px;
+    position: relative;
     cursor: pointer;
     transition: background 0.3s;
 }
+/* active = white, knob inverts — white is the accent color */
 .dnd-toggle.active {
-    background: #1cb349
+    background: rgb(var(--fg-rgb));
 }
 
 .dnd-knob {
@@ -87,6 +88,7 @@ text-align:center;
 
 .dnd-toggle.active .dnd-knob {
     left: 19px;
+    background: rgb(var(--bg-rgb));
 }
 .popup-left {
   width: 180px;
@@ -134,8 +136,8 @@ text-align:center;
 
 
 .cal-day.today {
-  background: #5bb91c;
-  color: #fff;
+  background: rgb(var(--fg-rgb));
+  color: rgb(var(--bg-rgb));
   font-weight: 600;
 }
 
@@ -267,8 +269,8 @@ text-align:center;
 }
 
 .power-option:hover {
-  background: rgba(12, 219, 255, 0.8);
-  color: #fff;
+  background: rgba(var(--fg-rgb), 0.12);
+  color: rgb(var(--fg-rgb));
 }
 
 .power-option.shutdown:hover {

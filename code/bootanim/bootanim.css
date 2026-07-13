@@ -26,7 +26,7 @@ html, body {
     flex-direction: column;
     gap: 16px;
     opacity: 0;
-    animation: fadeIn 0.5 ease forwards;
+    animation: fadeIn 0.5s ease forwards;
 }
 
 .checklist-title {
@@ -46,22 +46,24 @@ html, body {
     display: flex;
     align-items: center;
     gap:12px;
-    font: size 1.4rem;
+    font-size: 1.4rem;
     color: rgba(255, 255, 255, 0.87);
     transition: color 0.3s ease;
 
 }
 .check-box {
     font-size: 1.4rem;
-    color:rgba(255, 255, 255, 0.801);
-    transition: color 0.3 ease;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.3s ease;
     min-width: 24px;
 }
 .check-item.active .check-text {
-    color: rgba(226, 252, 228, 0.9)
+    color: rgba(255, 255, 255, 0.95);
 }
+/* done = full white with a soft glow, no neon green */
 .check-item.done .check-box {
-    color: #2bff00
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
 }
 .boot-spinner-wrapper {
     display: flex;
@@ -73,8 +75,8 @@ html, body {
 .boot-spinner{
     width: 200px;
     height:200px;
-    border: 1.5px solid rgba(11, 105, 8, 0.1);
-    border-top: 1.5px solid rgba(34, 235, 134, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-top: 1.5px solid rgba(255, 255, 255, 0.9);
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
 }

@@ -18,7 +18,7 @@
   width: 900px;
   height: 600px;
   background: #0a0a0a;
-  border: 1px solid rgba(187, 255, 156, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.8);
   display: flex;
@@ -26,4 +26,3 @@
   z-index: 1000;
   overflow: hidden;
 }
-
