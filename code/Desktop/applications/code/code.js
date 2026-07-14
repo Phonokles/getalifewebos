@@ -44,21 +44,85 @@ document.getElementById('btn-change-type').addEventListener('click', () => {
   langPicker.classList.remove('hidden');
 });
 
-document.getElementById('btn-download').addEventListener('click', () => {
-  const filename = filenameInput.value.trim() || `untitled.${LANG_EXT[currentLang] || 'txt'}`;
+
+const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
+
+let currentFolder = '';
+
+function currentFilename() {
+  return filenameInput.value.trim() || `untitled.${LANG_EXT[currentLang] || 'txt'}`;
+}
+
+document.getElementById('btn-add-local').addEventListener('click', () => {
   const blob = new Blob([textarea.value], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = currentFilename();
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
 
-// ── Tab fügt Einrückung ein statt den Fokus zu wechseln ─────────
+const addDataBtn = document.getElementById('btn-add-data');
+
+addDataBtn.addEventListener('click', () => {
+  if (!FS) {
+    flashBtn(addDataBtn, 'no FS');
+    return;
+  }
+  const err = FS.writeFile(currentFolder, currentFilename(), textarea.value);
+  flashBtn(addDataBtn, err ? err : 'Saved');
+});
+
+function flashBtn(btn, text) {
+  const original = 'Add in Data';
+  btn.textContent = text;
+  clearTimeout(btn._flashTimer);
+  btn._flashTimer = setTimeout(() => { btn.textContent = original; }, 1400);
+}
+
+
+const EXT_LANG = {};
+Object.entries(LANG_EXT).forEach(([lang, ext]) => { EXT_LANG[ext] = lang; });
+
+function openFromFS(path) {
+  if (!FS) return;
+  const content = FS.readFile(path);
+  if (content === null) return;
+
+  const parts = path.split('/');
+  const name = parts.pop();
+  currentFolder = parts.join('/');
+
+  const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : 'txt';
+  currentLang = EXT_LANG[ext] || 'txt';
+
+  filenameInput.value = name;
+  textarea.value = content;
+
+  langPicker.classList.add('hidden');
+  editorView.classList.add('active');
+  textarea.focus();
+}
+
+
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'openFile') {
+    if (FS) FS.consumePendingOpen(); 
+    openFromFS(e.data.path);
+  }
+});
+
+if (FS) {
+  const pending = FS.consumePendingOpen();
+  if (pending) openFromFS(pending);
+}
+
+
+
 textarea.addEventListener('keydown', (e) => {
   if (e.key === 'Tab') {
     e.preventDefault();

@@ -1,0 +1,65 @@
+
+.widget-editing .clock-widget,
+.widget-editing .todo-widget {
+  outline: 1.5px dashed rgba(var(--fg-rgb), 0.5);
+  outline-offset: 3px;
+  cursor: move;
+}
+
+.widget-editing .clock-widget *,
+.widget-editing .todo-widget * {
+  pointer-events: none;
+}
+
+.widget-editing .widget-resize-handle {
+  pointer-events: auto;
+}
+
+.widget-editing .widget-ghost {
+  opacity: 0.35;
+}
+
+
+.widget-resize-handle {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  border-right: 2px solid rgba(var(--fg-rgb), 0.7);
+  border-bottom: 2px solid rgba(var(--fg-rgb), 0.7);
+  border-bottom-right-radius: 8px;
+  cursor: nwse-resize;
+}
+
+/* done pill, bottom center — outlined like the unlock button */
+.widget-edit-done {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  padding: 8px 26px;
+  background: rgba(var(--bg-rgb), 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(var(--fg-rgb), 0.5);
+  border-radius: 999px;
+  color: rgb(var(--fg-rgb));
+  font-family: 'Bitcount', 'Courier New', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 9000;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.widget-editing .widget-edit-done {
+  display: block;
+}
+
+.widget-edit-done:hover {
+  background: rgba(var(--fg-rgb), 0.07);
+  border-color: rgb(var(--fg-rgb));
+}

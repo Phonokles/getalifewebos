@@ -152,16 +152,17 @@ html, body {
   color: rgb(var(--fg-rgb));
 }
 
-/* primary action inverts: white button, dark text -- white is the accent */
+/* primary = outlined, same style as the unlock button on the lock screen */
 .editor-btn-primary {
-  background: rgb(var(--fg-rgb));
-  border-color: rgb(var(--fg-rgb));
-  color: rgb(var(--bg-rgb));
+  background: none;
+  border-color: rgba(var(--fg-rgb), 0.5);
+  color: rgb(var(--fg-rgb));
 }
 
 .editor-btn-primary:hover {
-  box-shadow: 0 0 12px rgba(var(--fg-rgb), 0.5);
-  color: rgb(var(--bg-rgb));
+  background: rgba(var(--fg-rgb), 0.07);
+  border-color: rgb(var(--fg-rgb));
+  color: rgb(var(--fg-rgb));
 }
 
 .editor-textarea {

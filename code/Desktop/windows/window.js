@@ -176,6 +176,9 @@ function openCode() {
 function openTerminal() {
   openWindow('win-terminal', 'TERMINAL', 'applications/terminal/terminal.html', 480, 360);
 }
+ function openFiles() {
+  openWindow('win-files', 'FILES', 'applications/files/files.html', 520, 420);
+}
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
     const wallpaper = document.getElementById('wallpaper');
@@ -187,7 +190,6 @@ window.addEventListener('message', (e) => {
     document.documentElement.dataset.theme = e.data.theme;
     localStorage.setItem('theme', e.data.theme);
 
-    // An alle offenen App-Fenster weiterreichen
     document.querySelectorAll('.app-window iframe').forEach(frame => {
       frame.contentWindow.postMessage({ type: 'setTheme', theme: e.data.theme }, '*');
     });

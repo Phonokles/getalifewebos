@@ -38,6 +38,15 @@
           </svg>
           Pets
         </button>
+        <button class="nav-item" data-panel="widgets">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="8" height="8" rx="2"/>
+            <rect x="13" y="3" width="8" height="8" rx="2"/>
+            <rect x="3" y="13" width="8" height="8" rx="2"/>
+            <rect x="13" y="13" width="8" height="8" rx="2"/>
+          </svg>
+          Widgets
+        </button>
       </nav>
     </aside>
 
@@ -76,6 +85,34 @@
         <h2 class="panel-title">Pets</h2>
         <p class="panel-description">Lege fest, wie viele und welche Tiere durch die Taskbar streunen.</p>
         <div class="pets-list" id="pets-list"></div>
+      </section>
+      <section class="panel" id="panel-widgets">
+        <h2 class="panel-title">Widgets</h2>
+        <p class="panel-description">Blende Widgets aus oder ordne sie neu an.</p>
+
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <span class="setting-row-label">Clock</span>
+            <span class="setting-row-value">On the desktop</span>
+          </div>
+          <button class="sw" id="widget-toggle-clock" type="button" role="switch" aria-label="Clock widget"><span class="sw-knob"></span></button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <span class="setting-row-label">Todo</span>
+            <span class="setting-row-value">On the desktop</span>
+          </div>
+          <button class="sw" id="widget-toggle-todo" type="button" role="switch" aria-label="Todo widget"><span class="sw-knob"></span></button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <span class="setting-row-label">Arrange</span>
+            <span class="setting-row-value">Drag to move, pull the corner to resize</span>
+          </div>
+          <button class="settings-action-btn" id="widget-edit-btn" type="button">Move &amp; resize</button>
+        </div>
       </section>
     </main>
 

@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Have a Life WebOS — Desktop</title>
+  <title>Have a Life WebOS Desktop</title>
   <link rel="stylesheet" href="themes.css">
   <link rel="stylesheet" href="Desktop.css">
   <link rel="stylesheet" href="taskbar/taskbar.css">
@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="breakreminder/breakreminder.css">
   <link rel="stylesheet" href="popups/notifications.css">
   <link rel="stylesheet" href="widgets/todo.css">
+  <link rel="stylesheet" href="widgets/clock.css">
+  <link rel="stylesheet" href="widgets/widgetmanager.css">
 </head>
 <body>
   <div class="notif-container" id="notif-container"></div>
@@ -75,6 +77,11 @@
 
   <div class="wallpaper" id="wallpaper"></div>
 
+  <div class="clock-widget" id="clock-widget">
+    <div class="clock-time"><span id="clock-widget-time"></span><span class="clock-seconds" id="clock-widget-seconds"></span></div>
+    <div class="clock-date" id="clock-widget-date"></div>
+  </div>
+
   <div class="todo-widget" id="todo-widget">
     <div class="todo-header">
       <span class="todo-title">Todo</span>
@@ -130,6 +137,11 @@
           <line x1="12" y1="15" x2="16" y2="15"/>
         </svg>
       </button>
+      <button class="taskbar-app-btn" onclick="openFiles()" title="Files">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+      </button>
     </div>
   </footer>
 
@@ -145,11 +157,14 @@
     <div class="break-countdown" id="break-countdown"></div>
   </div>
 
+  <script src="applications/Files/filesystem.js"></script>
   <script src="taskbar/taskbar.js"></script>
   <script src="topbar/topbar.js"></script>
   <script src="../lock/lock.js"></script>
   <script src="windows/window.js"></script>
   <script src="widgets/todo.js"></script>
+  <script src="widgets/clock.js"></script>
+  <script src="widgets/widgetmanager.js"></script>
   <script src="breakreminder/breakreminder.js"></script>
   <script src="popups/notifications.js"></script>
   <script src="popups/drinkreminder.js"></script>

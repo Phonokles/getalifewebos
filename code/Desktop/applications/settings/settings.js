@@ -153,7 +153,36 @@ function setupPetsPanel() {
   render();
 }
 
+function setupWidgetsPanel() {
+  // the widget manager in the desktop owns localStorage 'widgetPrefs';
+  // settings only reads it for the initial toggle state and then
+  // talks to the desktop via postMessage
+  let visible = { clock: true, todo: true };
+  try {
+    const stored = JSON.parse(localStorage.getItem('widgetPrefs'));
+    if (stored?.visible) {
+      visible = { clock: stored.visible.clock !== false, todo: stored.visible.todo !== false };
+    }
+  } catch (e) {}
+
+  ['clock', 'todo'].forEach(key => {
+    const btn = document.getElementById(`widget-toggle-${key}`);
+    btn.classList.toggle('on', visible[key]);
+
+    btn.addEventListener('click', () => {
+      visible[key] = !visible[key];
+      btn.classList.toggle('on', visible[key]);
+      window.parent.postMessage({ type: 'setWidgetVisible', widget: key, visible: visible[key] }, '*');
+    });
+  });
+
+  document.getElementById('widget-edit-btn').addEventListener('click', () => {
+    window.parent.postMessage({ type: 'widgetEditMode' }, '*');
+  });
+}
+
 renderWallpapers();
 setupThemeSwitch();
 setupSidebarNav();
 setupPetsPanel();
+setupWidgetsPanel();
