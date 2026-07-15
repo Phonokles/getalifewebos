@@ -451,3 +451,51 @@ html, body {
   background: rgba(var(--fg-rgb), 0.07);
   border-color: rgb(var(--fg-rgb));
 }
+
+/* ── windows panel (wm modes) ──────────────────────────── */
+.wm-mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.wm-mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  padding: 12px 14px;
+  background: rgba(var(--fg-rgb), 0.03);
+  border: 1px solid rgba(var(--fg-rgb), 0.07);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+/* same little x-shift as everywhere else */
+.wm-mode-card:hover {
+  background: rgba(var(--fg-rgb), 0.06);
+  transform: translateX(6px);
+}
+
+.wm-mode-card.active {
+  border-color: rgba(var(--fg-rgb), 0.55);
+}
+
+.wm-mode-name {
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  color: rgba(var(--fg-rgb), 0.85);
+}
+
+.wm-mode-card.active .wm-mode-name {
+  color: rgb(var(--fg-rgb));
+}
+
+.wm-mode-desc {
+  font-size: 0.66rem;
+  letter-spacing: 0.5px;
+  color: rgba(var(--fg-rgb), 0.35);
+}

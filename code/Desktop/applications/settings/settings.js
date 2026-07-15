@@ -154,9 +154,6 @@ function setupPetsPanel() {
 }
 
 function setupWidgetsPanel() {
-  // the widget manager in the desktop owns localStorage 'widgetPrefs';
-  // settings only reads it for the initial toggle state and then
-  // talks to the desktop via postMessage
   let visible = { clock: true, todo: true };
   try {
     const stored = JSON.parse(localStorage.getItem('widgetPrefs'));
@@ -181,8 +178,24 @@ function setupWidgetsPanel() {
   });
 }
 
+function setupWindowsPanel() {
+  const cards = document.querySelectorAll('.wm-mode-card');
+  const current = localStorage.getItem('wmMode') || 'normal';
+
+  cards.forEach(card => {
+    card.classList.toggle('active', card.dataset.mode === current);
+
+    card.addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      window.parent.postMessage({ type: 'setWmMode', mode: card.dataset.mode }, '*');
+    });
+  });
+}
+
 renderWallpapers();
 setupThemeSwitch();
 setupSidebarNav();
 setupPetsPanel();
 setupWidgetsPanel();
+setupWindowsPanel();

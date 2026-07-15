@@ -32,7 +32,6 @@
   cursor: nwse-resize;
 }
 
-/* done pill, bottom center — outlined like the unlock button */
 .widget-edit-done {
   position: fixed;
   bottom: 90px;

@@ -38,6 +38,13 @@
           </svg>
           Pets
         </button>
+        <button class="nav-item" data-panel="windows">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <line x1="12" y1="4" x2="12" y2="20"/>
+          </svg>
+          Windows
+        </button>
         <button class="nav-item" data-panel="widgets">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="8" height="8" rx="2"/>
@@ -86,6 +93,26 @@
         <p class="panel-description">Lege fest, wie viele und welche Tiere durch die Taskbar streunen.</p>
         <div class="pets-list" id="pets-list"></div>
       </section>
+      <section class="panel" id="panel-windows">
+        <h2 class="panel-title">Windows</h2>
+        <p class="panel-description">Wie sollen sich Fenster anordnen?</p>
+
+        <div class="wm-mode-list">
+          <button class="wm-mode-card" data-mode="normal">
+            <span class="wm-mode-name">Normal</span>
+            <span class="wm-mode-desc">floating windows</span>
+          </button>
+          <button class="wm-mode-card" data-mode="hyprland">
+            <span class="wm-mode-name">Hyprland</span>
+            <span class="wm-mode-desc">automatic tiling windows split the screen use the arrow keys switch focus</span>
+          </button>
+          <button class="wm-mode-card" data-mode="niri">
+            <span class="wm-mode-name">Niri</span>
+            <span class="wm-mode-desc">scrollable columns every window is half the screen n arrow keys scroll</span>
+          </button>
+        </div>
+      </section>
+
       <section class="panel" id="panel-widgets">
         <h2 class="panel-title">Widgets</h2>
         <p class="panel-description">Blende Widgets aus oder ordne sie neu an.</p>

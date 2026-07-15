@@ -1,4 +1,4 @@
-.app-window {
+ .app-window {
   position: fixed;
   min-width: 360px;
   min-height: 280px;
@@ -52,18 +52,17 @@
 
 .window-btn:hover {
   transform: translateY(-1px);
+  background: rgba(var(--fg-rgb), 0.14);
+  color: rgb(var(--fg-rgb));
 }
 
 .window-btn:active {
   transform: translateY(0) scale(0.9);
 }
 
+/* small per-button icon motions, colors stay themed */
 .window-btn.close svg {
   transition: transform 0.3s cubic-bezier(.34, 1.56, .64, 1);
-}
-.window-btn.close:hover {
-  background: rgba(255, 95, 87, 0.16);
-  color: #ff6b61;
 }
 .window-btn.close:hover svg {
   transform: rotate(90deg);
@@ -72,12 +71,15 @@
 .window-btn.minimize svg {
   transition: transform 0.25s ease;
 }
-.window-btn.minimize:hover {
-  background: rgba(255, 189, 46, 0.16);
-  color: #ffbd2e;
-}
 .window-btn.minimize:hover svg {
   transform: scaleX(1.4);
+}
+
+.window-btn.fullscreen svg {
+  transition: transform 0.25s ease;
+}
+.window-btn.fullscreen:hover svg {
+  transform: scale(1.2);
 }
 
 
@@ -137,4 +139,37 @@
   background: rgba(var(--fg-rgb), 0.08);
   border-color: rgba(var(--fg-rgb), 0.35);
   color: rgb(var(--fg-rgb));
+}
+
+.app-window.tiled {
+  min-width: 0;
+  min-height: 0;
+  transition: left 0.22s ease, top 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.2s;
+}
+
+.wm-tiled .app-window.wm-focused {
+  border-color: rgba(var(--fg-rgb), 0.55);
+}
+
+.wm-tiled .resize-handle {
+  display: none;
+}
+
+.wm-tiled .window-titlebar {
+  cursor: default;
+}
+
+.app-window.is-fullscreen {
+  border-radius: 0;
+  border-color: transparent;
+}
+
+.snap-preview {
+  display: none;
+  position: fixed;
+  border: 1.5px dashed rgba(var(--fg-rgb), 0.5);
+  border-radius: 10px;
+  background: rgba(var(--fg-rgb), 0.06);
+  pointer-events: none;
+  z-index: 20000;
 }
