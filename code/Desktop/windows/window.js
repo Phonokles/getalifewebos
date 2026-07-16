@@ -420,7 +420,7 @@ function openTerminal() {
   openWindow('win-terminal', 'TERMINAL', 'applications/terminal/terminal.html', 480, 360);
 }
 function openFiles() {
-  openWindow('win-files', 'FILES', 'applications/files/files.html', 520, 420);
+  openWindow('win-files', 'FILES', 'applications/Files/files.html', 520, 420);
 }
 
 
