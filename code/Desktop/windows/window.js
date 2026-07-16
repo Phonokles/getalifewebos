@@ -1,15 +1,16 @@
 const MIN_W = 360;
 const MIN_H = 280;
-const GAP   = 8;          
+const GAP   = 8;         
 let topZ    = 1000;
 
 let currentWorkspace = 1;
 
+
 let wmMode = localStorage.getItem('wmMode') || 'normal';
 
-let focusedId = null;              // id of the focused window
-const tileOrder = [];              // window ids in open order
-const niriScroll = {};             // horizontal scroll per workspace
+let focusedId = null;            
+const tileOrder = [];        
+const niriScroll = {};            
 
 function bringToFront(win) {
   win.style.zIndex = ++topZ;
@@ -21,7 +22,7 @@ function setFocus(win) {
   document.querySelectorAll('.app-window').forEach(w =>
     w.classList.toggle('wm-focused', w === win));
   bringToFront(win);
-  if (wmMode === 'niri') relayout();   // niri scrolls the strip to the focus
+  if (wmMode === 'niri') relayout(); 
 }
 
 function updateWindowVisibility(win) {
@@ -43,7 +44,6 @@ function switchWorkspace(n) {
   relayout();
 }
 
-
 function getWorkArea() {
   const topbar = document.querySelector('.topbar');
   const footer = document.querySelector('.footer');
@@ -51,7 +51,6 @@ function getWorkArea() {
   const bottom = footer ? footer.getBoundingClientRect().top : window.innerHeight;
   return { x: GAP, y: top + GAP, w: window.innerWidth - GAP * 2, h: bottom - top - GAP * 2 };
 }
-
 
 function visibleWins() {
   return tileOrder
@@ -151,13 +150,14 @@ function setWmMode(mode) {
   }
   relayout();
 }
+
 const snapPreview = document.createElement('div');
 snapPreview.className = 'snap-preview';
 document.body.appendChild(snapPreview);
 
 function getSnapZone(x, y) {
   const area = getWorkArea();
-  if (y <= area.y) return 'max';                       // drag to the top edge
+  if (y <= area.y) return 'max';                    
   if (x <= 10) return 'left';
   if (x >= window.innerWidth - 10) return 'right';
   return null;
@@ -168,7 +168,7 @@ function snapRect(zone) {
   const halfW = (area.w - GAP) / 2;
   if (zone === 'left')  return { x: area.x, y: area.y, w: halfW, h: area.h };
   if (zone === 'right') return { x: area.x + halfW + GAP, y: area.y, w: halfW, h: area.h };
-  return { x: area.x, y: area.y, w: area.w, h: area.h }; // 'max'
+  return { x: area.x, y: area.y, w: area.w, h: area.h };
 }
 
 function setupDrag(win) {
@@ -189,7 +189,7 @@ function setupDrag(win) {
       const r = win._floatRect || { w: 720, h: 520 };
       win.style.width = r.w + 'px';
       win.style.height = r.h + 'px';
-      ox = r.w / 2;                                  // grab it by the middle of the titlebar
+      ox = r.w / 2;                               
       win.style.left = (e.clientX - ox) + 'px';
     }
 
@@ -215,7 +215,7 @@ function setupDrag(win) {
       snapPreview.style.display = 'none';
 
       if (zone) {
-        saveFloatRect(win);                         
+        saveFloatRect(win);                       
         const r = snapRect(zone);
         win.style.left = r.x + 'px';
         win.style.top = r.y + 'px';
@@ -231,6 +231,8 @@ function setupDrag(win) {
     document.addEventListener('mouseup', up);
   });
 }
+
+
 function setupResize(win) {
   win.querySelectorAll('.resize-handle').forEach(handle => {
     handle.addEventListener('mousedown', (e) => {
@@ -279,7 +281,6 @@ function setupResize(win) {
     });
   });
 }
-
 function toggleFullscreen(win) {
   const on = win.dataset.fullscreen === 'true';
   if (!on) {
@@ -293,6 +294,7 @@ function toggleFullscreen(win) {
   win.classList.toggle('is-fullscreen', !on);
   relayout();
 }
+
 
 function openWindow(id, title, src, width = 720, height = 520) {
   const existing = document.getElementById(id);
@@ -378,6 +380,9 @@ window.addEventListener('keydown', (e) => {
   if (wmMode === 'normal') return;
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
 
+  if (document.body.classList.contains('overview-active')) return;
+
+
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
         || t.tagName === 'SELECT' || t.isContentEditable)) return;
@@ -418,6 +423,8 @@ function openFiles() {
   openWindow('win-files', 'FILES', 'applications/files/files.html', 520, 420);
 }
 
+
+
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
     const wallpaper = document.getElementById('wallpaper');
@@ -437,4 +444,5 @@ window.addEventListener('message', (e) => {
     setWmMode(e.data.mode);
   }
 });
+
 document.body.classList.toggle('wm-tiled', wmMode !== 'normal');

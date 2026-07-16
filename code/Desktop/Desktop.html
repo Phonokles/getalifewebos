@@ -7,12 +7,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Have a Life WebOS Desktop</title>
+  <title>Have a Life WebOS — Desktop</title>
   <link rel="stylesheet" href="themes.css">
   <link rel="stylesheet" href="Desktop.css">
   <link rel="stylesheet" href="taskbar/taskbar.css">
   <link rel="stylesheet" href="topbar/topbar.css">
   <link rel="stylesheet" href="windows/window.css">
+  <link rel="stylesheet" href="Overview/overview.css">
   <link rel="stylesheet" href="../lock/lock.css">
   <link rel="stylesheet" href="breakreminder/breakreminder.css">
   <link rel="stylesheet" href="popups/notifications.css">
@@ -25,6 +26,14 @@
 
   <div class="topbar">
     <div class="topbar-left">
+      <button class="ov-btn" onclick="toggleOverview()" title="Overview">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+      </button>
       <div class="workspace-switcher" id="workspace-switcher">
         <button class="ws-dot active" data-ws="1" onclick="switchWorkspace(1)">1</button>
         <button class="ws-dot" data-ws="2" onclick="switchWorkspace(2)">2</button>
@@ -162,6 +171,7 @@
   <script src="topbar/topbar.js"></script>
   <script src="../lock/lock.js"></script>
   <script src="windows/window.js"></script>
+  <script src="Overview/overview.js"></script>
   <script src="widgets/todo.js"></script>
   <script src="widgets/clock.js"></script>
   <script src="widgets/widgetmanager.js"></script>
