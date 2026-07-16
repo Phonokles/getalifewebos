@@ -1,0 +1,119 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+  --bg-rgb-soft: 14, 14, 14;
+  --bg-rgb-softer: 26, 26, 26;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgb(var(--bg-rgb-soft));
+  color: rgba(var(--fg-rgb), 0.85);
+  font-family: 'Bitcount', 'Courier New', monospace;
+}
+
+.snake-app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.snake-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.07);
+}
+
+.snake-title {
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: rgba(var(--fg-rgb), 0.4);
+}
+
+.snake-scores {
+  display: flex;
+  gap: 16px;
+}
+
+.snake-score {
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.35);
+}
+
+.snake-score b {
+  color: rgba(var(--fg-rgb), 0.9);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.snake-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  min-height: 0;
+}
+
+#snake-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--fg-rgb), 0.12);
+  border-radius: 8px;
+  background: rgb(var(--bg-rgb));
+  image-rendering: pixelated;
+}
+
+.snake-overlay {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  background: rgba(var(--bg-rgb), 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 8px;
+}
+
+.snake-overlay.hidden {
+  display: none;
+}
+
+.snake-overlay-title {
+  font-size: 1.5rem;
+  font-variation-settings: 'wght' 350;
+  color: rgb(var(--fg-rgb));
+}
+
+.snake-overlay-text {
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  line-height: 2;
+  color: rgba(var(--fg-rgb), 0.45);
+}

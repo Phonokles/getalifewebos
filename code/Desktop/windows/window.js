@@ -422,6 +422,9 @@ function openTerminal() {
 function openFiles() {
   openWindow('win-files', 'FILES', 'applications/Files/files.html', 520, 420);
 }
+function openSnake() {
+  openWindow('win-snake', 'SNAKE', 'applications/snake/snake.html', 470, 540);
+}
 
 
 
@@ -446,3 +449,4 @@ window.addEventListener('message', (e) => {
 });
 
 document.body.classList.toggle('wm-tiled', wmMode !== 'normal');
+
