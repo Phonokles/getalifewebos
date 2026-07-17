@@ -4,7 +4,6 @@
   box-sizing: border-box;
 }
 
-/* ── Theme Variablen (eigenes iframe-Dokument) ──────────── */
 :root {
   --fg-rgb: 255, 255, 255;
   --bg-rgb: 10, 10, 10;

@@ -395,8 +395,6 @@ html, body {
   border-left: 1px solid rgba(var(--fg-rgb), 0.12);
   border-right: 1px solid rgba(var(--fg-rgb), 0.12);
 }
-/* ── widgets panel ─────────────────────────────────────── */
-
 /* plain switch, same footprint as the theme switch but without icons */
 .sw {
   width: 44px;
@@ -452,7 +450,6 @@ html, body {
   border-color: rgb(var(--fg-rgb));
 }
 
-/* ── windows panel (wm modes) ──────────────────────────── */
 .wm-mode-list {
   display: flex;
   flex-direction: column;

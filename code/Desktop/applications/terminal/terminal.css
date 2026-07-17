@@ -83,3 +83,62 @@ html, body {
   font-family: inherit;
   font-size: inherit;
 }
+.nano {
+  display: none;
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  background: rgb(var(--bg-rgb));
+  color: rgba(var(--fg-rgb), 0.85);
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  z-index: 10;
+}
+
+.nano.open {
+  display: flex;
+}
+
+.nano-header,
+.nano-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 16px;
+  padding: 6px 12px;
+  background: rgba(var(--fg-rgb), 0.06);
+  color: rgba(var(--fg-rgb), 0.55);
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+}
+
+.nano-header span:first-child {
+  text-transform: uppercase;
+}
+
+#nano-filename {
+  color: rgba(var(--fg-rgb), 0.9);
+}
+
+#nano-status {
+  margin-left: auto;
+}
+
+.nano-footer b {
+  font-weight: 400;
+  color: rgba(var(--fg-rgb), 0.9);
+}
+
+.nano-text {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  background: transparent;
+  color: rgba(var(--fg-rgb), 0.9);
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.15) transparent;
+}
