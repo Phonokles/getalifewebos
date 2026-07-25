@@ -1,4 +1,3 @@
-
 (function () {
 
   const root = { type: 'folder', name: '', children: {} };
@@ -112,8 +111,20 @@
 
     requestOpenInEditor(path) {
       this._pendingOpen = path;
-      if (typeof openCode === 'function') openCode();
-      const win = document.getElementById('win-code');
+
+      // vorhandenes code-fenster wiederverwenden statt jedes mal ein neues zu oeffnen
+      let win = document.querySelector('.app-window[data-app="win-code"]')
+             || document.getElementById('win-code');
+
+      if (!win) {
+        if (typeof openCode === 'function') win = openCode();  // neu -> code.js holt sich _pendingOpen beim laden
+      } else {
+        win.dataset.minimized = 'false';
+        win.style.display = '';
+        if (typeof setFocus === 'function') setFocus(win);
+        if (typeof relayout === 'function') relayout();
+      }
+
       const frame = win ? win.querySelector('iframe') : null;
       if (frame && frame.contentWindow) {
         frame.contentWindow.postMessage({ type: 'openFile', path }, '*');

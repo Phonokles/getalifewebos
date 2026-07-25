@@ -193,9 +193,26 @@ function setupWindowsPanel() {
   });
 }
 
+function setupKeybindsPanel() {
+  const cards = document.querySelectorAll('#panel-keybinds .wm-mode-card');
+  const current = localStorage.getItem('keybindMod') || 'ctrl-alt';
+
+  cards.forEach(card => {
+    card.classList.toggle('active', card.dataset.mod === current);
+
+    card.addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      localStorage.setItem('keybindMod', card.dataset.mod);
+      window.parent.postMessage({ type: 'setKeybindMod', mod: card.dataset.mod }, '*');
+    });
+  });
+}
+
 renderWallpapers();
 setupThemeSwitch();
 setupSidebarNav();
 setupPetsPanel();
 setupWidgetsPanel();
 setupWindowsPanel();
+setupKeybindsPanel();

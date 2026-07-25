@@ -45,6 +45,13 @@
           </svg>
           Windows
         </button>
+        <button class="nav-item" data-panel="keybinds">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="7" width="18" height="12" rx="2"/>
+            <path d="M7 11h.01M11 11h.01M15 11h.01M8 15h8"/>
+          </svg>
+          Keybinds
+        </button>
         <button class="nav-item" data-panel="widgets">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="8" height="8" rx="2"/>
@@ -113,6 +120,26 @@
         </div>
       </section>
 
+      <section class="panel" id="panel-keybinds">
+        <h2 class="panel-title">Keybinds</h2>
+        <p class="panel-description">Welche Taste löst Shortcuts aus? Den Launcher öffnest du immer mit einmal Alt antippen.</p>
+
+        <div class="wm-mode-list">
+          <button class="wm-mode-card" data-mod="ctrl-alt">
+            <span class="wm-mode-name">Strg + Alt</span>
+            <span class="wm-mode-desc">AltGr bleibt frei für @ { } [ ] | — nur die linke Alt-Taste löst aus</span>
+          </button>
+          <button class="wm-mode-card" data-mod="alt">
+            <span class="wm-mode-name">Alt</span>
+            <span class="wm-mode-desc">nur die linke Alt-Taste plus eine Taste, z.B. Alt + E für Files</span>
+          </button>
+          <button class="wm-mode-card" data-mod="super">
+            <span class="wm-mode-name">Super</span>
+            <span class="wm-mode-desc">die Windows-Taste — manche Kombis wie Super+E fängt Windows selbst ab</span>
+          </button>
+        </div>
+      </section>
+
       <section class="panel" id="panel-widgets">
         <h2 class="panel-title">Widgets</h2>
         <p class="panel-description">Blende Widgets aus oder ordne sie neu an.</p>
@@ -144,7 +171,7 @@
     </main>
 
   </div>
+  <script src="../../keybinds/keyforward.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>
-d-----q----------------------spufsqjegeqecosqtczyilznyzknwisrcwyfhpjkbbokhwfmfugvbhblkq

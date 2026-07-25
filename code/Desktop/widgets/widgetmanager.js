@@ -1,5 +1,3 @@
-
-
 (function () {
 
   const WIDGETS = [
@@ -167,7 +165,8 @@
       }
     }
     if (msg?.type === 'widgetEditMode') {
-      const settingsWin = document.getElementById('win-settings');
+      const settingsWin = document.querySelector('.app-window[data-app="win-settings"]')
+                       || document.getElementById('win-settings');
       if (settingsWin) {
         settingsWin.dataset.minimized = 'true';
         settingsWin.style.display = 'none';

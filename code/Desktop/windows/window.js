@@ -2,6 +2,7 @@ const MIN_W = 360;
 const MIN_H = 280;
 const GAP   = 8;         
 let topZ    = 1000;
+let winSeq  = 0;              // laufende nummer fuer eindeutige fenster-ids
 
 let currentWorkspace = 1;
 
@@ -281,6 +282,21 @@ function setupResize(win) {
     });
   });
 }
+function destroyWindow(win) {
+  const idx = tileOrder.indexOf(win.id);
+  if (idx >= 0) tileOrder.splice(idx, 1);
+
+  const wasFocused = focusedId === win.id;
+  win.remove();
+
+  if (wasFocused) {
+    focusedId = null;
+    const rest = visibleWins();
+    if (rest.length) setFocus(rest[rest.length - 1]);
+  }
+  relayout();
+}
+
 function toggleFullscreen(win) {
   const on = win.dataset.fullscreen === 'true';
   if (!on) {
@@ -296,24 +312,31 @@ function toggleFullscreen(win) {
 }
 
 
-function openWindow(id, title, src, width = 720, height = 520) {
-  const existing = document.getElementById(id);
-  if (existing) {
-    existing.dataset.minimized = 'false';
-    const ws = parseInt(existing.dataset.workspace || '1', 10);
-    if (ws !== currentWorkspace) switchWorkspace(ws);
-    updateWindowVisibility(existing);
-    setFocus(existing);
-    relayout();
-    return;
+function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
+  if (opts.singleton) {
+    const existing = document.querySelector(`.app-window[data-app="${baseId}"]`);
+    if (existing) {
+      existing.dataset.minimized = 'false';
+      const ws = parseInt(existing.dataset.workspace || '1', 10);
+      if (ws !== currentWorkspace) switchWorkspace(ws);
+      updateWindowVisibility(existing);
+      setFocus(existing);
+      relayout();
+      return existing;
+    }
   }
 
-  const startX = Math.max(40, Math.floor((window.innerWidth - width) / 2));
-  const startY = Math.max(40, Math.floor((window.innerHeight - height) / 2));
+  const id = `${baseId}__${++winSeq}`;
+
+  // jedes weitere fenster leicht versetzt, damit es das vorherige nicht exakt deckt
+  const cascade = ((winSeq - 1) % 6) * 26;
+  const startX = Math.max(40, Math.floor((window.innerWidth - width) / 2)) + cascade;
+  const startY = Math.max(40, Math.floor((window.innerHeight - height) / 2)) + cascade;
 
   const win = document.createElement('div');
   win.className = 'app-window';
   win.id = id;
+  win.dataset.app = baseId;
   win.dataset.workspace = String(currentWorkspace);
   win.dataset.minimized = 'false';
   win.dataset.fullscreen = 'false';
@@ -358,9 +381,7 @@ function openWindow(id, title, src, width = 720, height = 520) {
   win.addEventListener('mousedown', () => setFocus(win));
 
   win.querySelector('.window-btn.close').addEventListener('click', () => {
-    win.dataset.minimized = 'true';
-    win.style.display = 'none';
-    relayout();
+    destroyWindow(win);
   });
 
   win.querySelector('.window-btn.minimize').addEventListener('click', () => {
@@ -374,6 +395,7 @@ function openWindow(id, title, src, width = 720, height = 520) {
   });
 
   relayout();
+  return win;
 }
 
 window.addEventListener('keydown', (e) => {
@@ -404,7 +426,7 @@ window.addEventListener('resize', relayout);
 
 
 function openSettings() {
-  openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html');
+  openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html', 720, 520, { singleton: true });
 }
 
 function openCalculator() {
@@ -449,4 +471,3 @@ window.addEventListener('message', (e) => {
 });
 
 document.body.classList.toggle('wm-tiled', wmMode !== 'normal');
-
