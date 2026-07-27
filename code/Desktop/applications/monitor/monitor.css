@@ -1,0 +1,167 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+  --bg-rgb-soft: 14, 14, 14;
+  --bg-rgb-softer: 26, 26, 26;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgb(var(--bg-rgb-soft));
+  color: rgba(var(--fg-rgb), 0.9);
+  font-family: 'Bitcount', 'Courier New', monospace;
+}
+
+.mon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  width: 100%;
+  height: 100%;
+  padding: 11px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.1) transparent;
+}
+
+.mon-box {
+  background: rgb(var(--bg-rgb));
+  border: 1px solid rgba(var(--fg-rgb), 0.09);
+  border-radius: 8px;
+  padding: 9px 11px 10px;
+  min-width: 0;
+}
+
+.mon-wide {
+  grid-column: 1 / -1;
+}
+
+.mon-box-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.mon-box-title {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(var(--fg-rgb), 0.3);
+}
+
+.mon-box-val {
+  margin-left: auto;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.9);
+}
+
+.mon-canvas {
+  display: block;
+  width: 100%;
+  height: 54px;
+}
+
+.mon-bar {
+  height: 7px;
+  background: rgba(var(--fg-rgb), 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mon-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: rgba(var(--fg-rgb), 0.55);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.mon-sub {
+  margin-top: 6px;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.25);
+}
+
+.mon-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mon-row {
+  display: flex;
+  align-items: baseline;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.3);
+}
+
+.mon-row b {
+  margin-left: auto;
+  font-weight: normal;
+  color: rgba(var(--fg-rgb), 0.75);
+}
+
+.mon-procs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 128px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.1) transparent;
+}
+
+.mon-proc {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.66rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.55);
+}
+
+.mon-proc:nth-child(odd) {
+  background: rgba(var(--fg-rgb), 0.03);
+}
+
+.mon-proc-pid {
+  color: rgba(var(--fg-rgb), 0.25);
+  min-width: 42px;
+}
+
+.mon-proc-name {
+  color: rgba(var(--fg-rgb), 0.85);
+}
+
+.mon-proc-tag {
+  margin-left: auto;
+  color: rgba(var(--fg-rgb), 0.28);
+}
+
+.mon-empty {
+  padding: 10px 6px;
+  font-size: 0.66rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.25);
+}

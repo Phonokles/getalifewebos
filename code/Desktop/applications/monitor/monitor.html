@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="monitor.css">
+</head>
+<body>
+  <div class="mon">
+
+    <section class="mon-box mon-graph-box">
+      <div class="mon-box-head">
+        <span class="mon-box-title">load</span>
+        <span class="mon-box-val" id="load-val">0%</span>
+      </div>
+      <canvas id="load-canvas" class="mon-canvas"></canvas>
+    </section>
+
+    <section class="mon-box mon-graph-box">
+      <div class="mon-box-head">
+        <span class="mon-box-title">fps</span>
+        <span class="mon-box-val" id="fps-val">0</span>
+      </div>
+      <canvas id="fps-canvas" class="mon-canvas"></canvas>
+    </section>
+
+    <section class="mon-box">
+      <div class="mon-box-head">
+        <span class="mon-box-title">memory</span>
+        <span class="mon-box-val" id="mem-val">n/a</span>
+      </div>
+      <div class="mon-bar"><div class="mon-bar-fill" id="mem-bar"></div></div>
+      <div class="mon-sub" id="mem-sub">heap not exposed by this browser</div>
+    </section>
+
+    <section class="mon-box">
+      <div class="mon-box-head">
+        <span class="mon-box-title">system</span>
+        <span class="mon-box-val" id="uptime-val">0s</span>
+      </div>
+      <div class="mon-rows" id="sys-rows"></div>
+    </section>
+
+    <section class="mon-box mon-wide">
+      <div class="mon-box-head">
+        <span class="mon-box-title">windows</span>
+        <span class="mon-box-val" id="win-count">0</span>
+      </div>
+      <div class="mon-procs" id="proc-list"></div>
+    </section>
+
+  </div>
+
+  <script src="../../keybinds/keyforward.js"></script>
+  <script src="monitor.js"></script>
+</body>
+</html>

@@ -1,43 +1,34 @@
 (function () {
 
-  const svg = (inner) =>
-    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  const APPS = [
+    { name: 'terminal', keys: 'shell console cli bash', run: () => openTerminal() },
+    { name: 'files', keys: 'explorer folder fm', run: () => openFiles() },
+    { name: 'code', keys: 'editor text write', run: () => openCode() },
+    { name: 'paint', keys: 'draw canvas art brush', run: () => openPaint() },
+    { name: 'viewer', keys: 'image picture photo png', run: () => openViewer() },
+    { name: 'monitor', keys: 'btop system stats cpu', run: () => openMonitor() },
+    { name: 'calculator', keys: 'calc math numbers', run: () => openCalculator() },
+    { name: 'todo', keys: 'tasks list', run: () => openTodo() },
+    { name: 'snake', keys: 'game play arcade', run: () => openSnake() },
+    { name: 'settings', keys: 'config prefs options', run: () => openSettings() },
+    { name: 'welcome', keys: 'about help intro', run: () => openWelcome() },
+  ];
 
-  const ICON = {
-    terminal: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="12" y1="15" x2="16" y2="15"/>'),
-    files:    svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
-    code:     svg('<polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/>'),
-    calc:     svg('<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>'),
-    todo:     svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
-    settings: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>'),
-    snake:    svg('<path d="M4 17V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4"/><circle cx="19" cy="7" r="0.6" fill="currentColor"/>'),
-    grid:     svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
-    lock:     svg('<rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
-    theme:    svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>'),
-    layout:   svg('<rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="5" rx="1"/>'),
-    help:     svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3 2.4V14"/><circle cx="12" cy="17.5" r="0.6" fill="currentColor"/>'),
-  };
-
-  // laufen über den eigenen message-handler in window.js, damit die logik nur einmal existiert
   const post = (data) => window.postMessage(data, '*');
 
-  const entries = [
-    { name: 'terminal',         keys: 'shell console cli bash',   tag: 'app', icon: ICON.terminal, run: () => openTerminal() },
-    { name: 'files',            keys: 'explorer ordner fm',       tag: 'app', icon: ICON.files,    run: () => openFiles() },
-    { name: 'code',             keys: 'editor text write',        tag: 'app', icon: ICON.code,     run: () => openCode() },
-    { name: 'calculator',       keys: 'calc rechner math',        tag: 'app', icon: ICON.calc,     run: () => openCalculator() },
-    { name: 'todo',             keys: 'tasks liste',              tag: 'app', icon: ICON.todo,     run: () => openTodo() },
-    { name: 'settings',         keys: 'config einstellungen',     tag: 'app', icon: ICON.settings, run: () => openSettings() },
-    { name: 'snake',            keys: 'game spiel play',          tag: 'app', icon: ICON.snake,    run: () => openSnake() },
-
-    { name: 'overview',         keys: 'windows expose fenster',   tag: 'sys', icon: ICON.grid,   run: () => toggleOverview() },
-    { name: 'keybinds',         keys: 'help hilfe shortcuts',     tag: 'sys', icon: ICON.help,   run: () => toggleCheatsheet() },
-    { name: 'lock screen',      keys: 'sperren afk',              tag: 'sys', icon: ICON.lock,   run: () => lockScreen() },
-    { name: 'theme: dark',      keys: 'dunkel night',             tag: 'sys', icon: ICON.theme,  run: () => post({ type: 'setTheme', theme: 'dark' }) },
-    { name: 'theme: light',     keys: 'hell day',                 tag: 'sys', icon: ICON.theme,  run: () => post({ type: 'setTheme', theme: 'light' }) },
-    { name: 'layout: normal',   keys: 'float floating wm',        tag: 'sys', icon: ICON.layout, run: () => post({ type: 'setWmMode', mode: 'normal' }) },
-    { name: 'layout: hyprland', keys: 'tiling dwindle wm',        tag: 'sys', icon: ICON.layout, run: () => post({ type: 'setWmMode', mode: 'hyprland' }) },
-    { name: 'layout: niri',     keys: 'scroll columns wm',        tag: 'sys', icon: ICON.layout, run: () => post({ type: 'setWmMode', mode: 'niri' }) },
+  const CMDS = [
+    { name: 'theme dark', keys: 'night dim', run: () => post({ type: 'setTheme', theme: 'dark' }) },
+    { name: 'theme light', keys: 'day bright', run: () => post({ type: 'setTheme', theme: 'light' }) },
+    { name: 'layout normal', keys: 'float floating wm', run: () => post({ type: 'setWmMode', mode: 'normal' }) },
+    { name: 'layout hyprland', keys: 'tiling dwindle wm', run: () => post({ type: 'setWmMode', mode: 'hyprland' }) },
+    { name: 'layout niri', keys: 'scroll columns wm', run: () => post({ type: 'setWmMode', mode: 'niri' }) },
+    { name: 'wallpaper night', keys: 'bg forest dark', run: () => post({ type: 'setWallpaper', file: 'Nightforrest.jpg' }) },
+    { name: 'wallpaper day', keys: 'bg forest light', run: () => post({ type: 'setWallpaper', file: 'dayforrest.jpg' }) },
+    { name: 'keybinds', keys: 'help shortcuts cheatsheet', run: () => toggleCheatsheet() },
+    { name: 'overview', keys: 'windows expose grid', run: () => toggleOverview() },
+    { name: 'lock', keys: 'afk away screen', run: () => lockScreen() },
+    { name: 'shutdown', keys: 'power off exit', run: () => { window.location.href = '../shutdownanim/shutdownanim.html'; } },
+    { name: 'reboot', keys: 'restart power', run: () => { window.location.href = '../shutdownanim/shutdownanim.html?reboot=1'; } },
   ];
 
   const backdrop = document.createElement('div');
@@ -49,23 +40,21 @@
   box.innerHTML = `
     <div class="launcher-row">
       <span class="launcher-prompt">&gt;</span>
-      <input type="text" class="launcher-input" placeholder="type to search..." autocomplete="off" spellcheck="false">
+      <input type="text" class="launcher-input" placeholder="&gt; for commands" autocomplete="off" spellcheck="false">
     </div>
     <div class="launcher-list"></div>
-    <div class="launcher-hint">
-      <span>enter · run</span>
-      <span>up/down · select</span>
-      <span>esc · close</span>
-    </div>
   `;
   document.body.appendChild(box);
 
   const input = box.querySelector('.launcher-input');
-  const list  = box.querySelector('.launcher-list');
+  const list = box.querySelector('.launcher-list');
+  const prompt = box.querySelector('.launcher-prompt');
 
   let open = false;
   let results = [];
   let sel = 0;
+
+  const isCmdMode = () => input.value.startsWith('>');
 
   function score(entry, q) {
     if (!q) return 1;
@@ -83,9 +72,14 @@
   }
 
   function render() {
-    const q = input.value.trim().toLowerCase();
+    const cmd = isCmdMode();
+    const q = (cmd ? input.value.slice(1) : input.value).trim().toLowerCase();
+    const source = cmd ? CMDS : APPS;
 
-    results = entries
+    prompt.textContent = cmd ? '>' : '';
+    box.classList.toggle('cmd-mode', cmd);
+
+    results = source
       .map(e => ({ e, s: score(e, q) }))
       .filter(r => r.s > 0)
       .sort((a, b) => b.s - a.s)
@@ -94,20 +88,16 @@
     if (sel >= results.length) sel = 0;
 
     if (!results.length) {
-      list.innerHTML = '<div class="launcher-empty">nothing here [-_-]</div>';
+      list.innerHTML = '<div class="launcher-empty">nothing [-_-]</div>';
       return;
     }
 
-    list.innerHTML = results.map((e, i) => `
-      <div class="launcher-item${i === sel ? ' selected' : ''}" data-i="${i}">
-        ${e.icon}
-        <span>${e.name}</span>
-        <span class="launcher-tag">${e.tag}</span>
-      </div>
-    `).join('');
+    list.innerHTML = results
+      .map((e, i) => `<button class="launcher-item${i === sel ? ' selected' : ''}" data-i="${i}"></button>`)
+      .join('');
 
-    list.querySelectorAll('.launcher-item').forEach(el => {
-      const i = parseInt(el.dataset.i, 10);
+    list.querySelectorAll('.launcher-item').forEach((el, i) => {
+      el.textContent = results[i].name;
       el.addEventListener('click', () => run(i));
       el.addEventListener('mousemove', () => {
         if (sel === i) return;
@@ -121,8 +111,7 @@
     list.querySelectorAll('.launcher-item').forEach((el, i) => {
       el.classList.toggle('selected', i === sel);
     });
-    const el = list.children[sel];
-    if (el) el.scrollIntoView({ block: 'nearest' });
+    list.children[sel]?.scrollIntoView?.({ block: 'nearest' });
   }
 
   function run(i) {
@@ -182,9 +171,6 @@
   };
 
   window.closeLauncher = closeLauncher;
-
-  window.isLauncherOpen = function () {
-    return open;
-  };
+  window.isLauncherOpen = () => open;
 
 })();

@@ -28,7 +28,7 @@ const DEFAULT_ROUTINE = [
 
 function loadTodoState() {
   // Tiefe Kopie der Defaults mit Laufzeit-Feldern (done / count)
-  // Es wird bewusst nichts gespeichert -- jeder Seitenaufruf startet frisch.
+  // Es wird bewusst nichts gespeichert -- jeder Seitenaufruf startet frisch.lf
   return DEFAULT_ROUTINE.map(section => ({
     name: section.name,
     items: section.items.map(item =>

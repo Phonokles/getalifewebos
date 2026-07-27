@@ -45,6 +45,13 @@
           </svg>
           Windows
         </button>
+        <button class="nav-item" data-panel="system">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+            <rect x="9" y="9" width="6" height="6"/>
+          </svg>
+          System
+        </button>
         <button class="nav-item" data-panel="keybinds">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="7" width="18" height="12" rx="2"/>
@@ -120,22 +127,35 @@
         </div>
       </section>
 
+      <section class="panel" id="panel-system">
+        <h2 class="panel-title">System</h2>
+        <p class="panel-description">General behaviour of the desktop.</p>
+
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <span class="setting-row-label">Welcome app</span>
+            <span class="setting-row-value">Opens when the system starts</span>
+          </div>
+          <button class="sw" id="welcome-toggle" type="button" role="switch" aria-label="Welcome app"><span class="sw-knob"></span></button>
+        </div>
+      </section>
+
       <section class="panel" id="panel-keybinds">
         <h2 class="panel-title">Keybinds</h2>
-        <p class="panel-description">Welche Taste löst Shortcuts aus? Den Launcher öffnest du immer mit einmal Alt antippen.</p>
+        <p class="panel-description">What triggers your shortcuts. The launcher always opens by tapping Alt once.</p>
 
         <div class="wm-mode-list">
           <button class="wm-mode-card" data-mod="ctrl-alt">
-            <span class="wm-mode-name">Strg + Alt</span>
-            <span class="wm-mode-desc">AltGr bleibt frei für @ { } [ ] | — nur die linke Alt-Taste löst aus</span>
+            <span class="wm-mode-name">Ctrl + Alt</span>
+            <span class="wm-mode-desc">left Alt key only, so AltGr stays free for @ { } [ ] |</span>
           </button>
           <button class="wm-mode-card" data-mod="alt">
             <span class="wm-mode-name">Alt</span>
-            <span class="wm-mode-desc">nur die linke Alt-Taste plus eine Taste, z.B. Alt + E für Files</span>
+            <span class="wm-mode-desc">left Alt plus a key, like Alt + E for Files</span>
           </button>
           <button class="wm-mode-card" data-mod="super">
             <span class="wm-mode-name">Super</span>
-            <span class="wm-mode-desc">die Windows-Taste — manche Kombis wie Super+E fängt Windows selbst ab</span>
+            <span class="wm-mode-desc">the Windows key, though Windows eats some combos like Super+E</span>
           </button>
         </div>
       </section>

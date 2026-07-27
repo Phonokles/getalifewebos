@@ -209,6 +209,18 @@ function setupKeybindsPanel() {
   });
 }
 
+function setupSystemPanel() {
+  const btn = document.getElementById('welcome-toggle');
+  let on = localStorage.getItem('skipWelcome') !== '1';
+  btn.classList.toggle('on', on);
+
+  btn.addEventListener('click', () => {
+    on = !on;
+    btn.classList.toggle('on', on);
+    localStorage.setItem('skipWelcome', on ? '0' : '1');
+  });
+}
+
 renderWallpapers();
 setupThemeSwitch();
 setupSidebarNav();
@@ -216,3 +228,4 @@ setupPetsPanel();
 setupWidgetsPanel();
 setupWindowsPanel();
 setupKeybindsPanel();
+setupSystemPanel();

@@ -1,4 +1,4 @@
- .app-window {
+.app-window {
   position: fixed;
   min-width: 360px;
   min-height: 280px;
@@ -10,6 +10,26 @@
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s;
+}
+
+@keyframes win-open {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes win-close {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.9); }
+}
+
+.app-window.win-open-anim {
+  animation: win-open 0.16s cubic-bezier(.34, 1.4, .64, 1);
+}
+
+/* nach win-open-anim, damit es beim schliessen die animation ueberschreibt */
+.app-window.win-closing {
+  animation: win-close 0.14s ease forwards;
+  pointer-events: none;
 }
 
 .window-titlebar {
@@ -110,35 +130,8 @@
 .resize-se { bottom: 0; right: 0;     width: 10px;  height: 10px; cursor: se-resize; }
 .resize-sw { bottom: 0; left: 0;      width: 10px;  height: 10px; cursor: sw-resize; }
 
-.taskbar-apps {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.taskbar-app-btn {
-  background: none;
-  border: 1px solid rgba(var(--fg-rgb), 0.15);
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: rgba(var(--fg-rgb), 0.55);
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-}
 
-.taskbar-app-btn:hover {
-  background: rgba(var(--fg-rgb), 0.08);
-  border-color: rgba(var(--fg-rgb), 0.35);
-  color: rgb(var(--fg-rgb));
-}
 
 .app-window.tiled {
   min-width: 0;

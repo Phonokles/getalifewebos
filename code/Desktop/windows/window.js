@@ -2,7 +2,7 @@ const MIN_W = 360;
 const MIN_H = 280;
 const GAP   = 8;         
 let topZ    = 1000;
-let winSeq  = 0;              // laufende nummer fuer eindeutige fenster-ids
+let winSeq  = 0;
 
 let currentWorkspace = 1;
 
@@ -282,19 +282,34 @@ function setupResize(win) {
     });
   });
 }
+function applyWallpaper(value) {
+  const wallpaper = document.getElementById('wallpaper');
+  if (!wallpaper || !value) return;
+
+  wallpaper.style.backgroundImage = value.startsWith('data:')
+    ? `url("${value}")`
+    : `url(../Wallpapers/${value})`;
+}
+
+applyWallpaper(localStorage.getItem('wallpaper') || 'Nightforrest.jpg');
+
 function destroyWindow(win) {
+  if (win.dataset.closing === 'true') return;
+  win.dataset.closing = 'true';
+
   const idx = tileOrder.indexOf(win.id);
   if (idx >= 0) tileOrder.splice(idx, 1);
 
-  const wasFocused = focusedId === win.id;
-  win.remove();
-
-  if (wasFocused) {
+  if (focusedId === win.id) {
     focusedId = null;
     const rest = visibleWins();
     if (rest.length) setFocus(rest[rest.length - 1]);
   }
   relayout();
+
+  // out of the layout now, so it fades where it sits
+  win.classList.add('win-closing');
+  setTimeout(() => win.remove(), 160);
 }
 
 function toggleFullscreen(win) {
@@ -314,21 +329,30 @@ function toggleFullscreen(win) {
 
 function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
   if (opts.singleton) {
-    const existing = document.querySelector(`.app-window[data-app="${baseId}"]`);
-    if (existing) {
-      existing.dataset.minimized = 'false';
-      const ws = parseInt(existing.dataset.workspace || '1', 10);
+    // alle vorhandenen instanzen einsammeln (data-app UND alte exakte id)
+    const dupes = [...document.querySelectorAll(`.app-window[data-app="${baseId}"]`)];
+    const legacy = document.getElementById(baseId);
+    if (legacy && legacy.classList.contains('app-window') && !dupes.includes(legacy)) {
+      dupes.push(legacy);
+    }
+
+    if (dupes.length) {
+      const keep = dupes[0];
+      for (let i = 1; i < dupes.length; i++) destroyWindow(dupes[i]);  // ueberzaehlige zusammenfuehren
+
+      keep.dataset.minimized = 'false';
+      const ws = parseInt(keep.dataset.workspace || '1', 10);
       if (ws !== currentWorkspace) switchWorkspace(ws);
-      updateWindowVisibility(existing);
-      setFocus(existing);
+      updateWindowVisibility(keep);
+      setFocus(keep);
       relayout();
-      return existing;
+      return keep;
     }
   }
 
   const id = `${baseId}__${++winSeq}`;
 
-  // jedes weitere fenster leicht versetzt, damit es das vorherige nicht exakt deckt
+  // offset each new window so it does not sit exactly on the last one
   const cascade = ((winSeq - 1) % 6) * 26;
   const startX = Math.max(40, Math.floor((window.innerWidth - width) / 2)) + cascade;
   const startY = Math.max(40, Math.floor((window.innerHeight - height) / 2)) + cascade;
@@ -394,6 +418,9 @@ function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
     toggleFullscreen(win);
   });
 
+  win.classList.add('win-open-anim');
+  setTimeout(() => win.classList.remove('win-open-anim'), 200);
+
   relayout();
   return win;
 }
@@ -426,35 +453,49 @@ window.addEventListener('resize', relayout);
 
 
 function openSettings() {
-  openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html', 720, 520, { singleton: true });
+  return openWindow('win-settings', 'SETTINGS', 'applications/settings/settings.html', 720, 520, { singleton: true });
 }
 
 function openCalculator() {
-  openWindow('win-calculator', 'CALCULATOR', 'applications/calculator/calculator.html', 300, 440);
+  return openWindow('win-calculator', 'CALCULATOR', 'applications/calculator/calculator.html', 300, 440);
 }
 function openTodo() {
-  openWindow('win-todo', 'TODO', 'applications/todo/todo.html', 300, 460);
+  return openWindow('win-todo', 'TODO', 'applications/todo/todo.html', 300, 460);
 }
 function openCode() {
-  openWindow('win-code', 'CODE', 'applications/code/code.html', 560, 460);
+  return openWindow('win-code', 'CODE', 'applications/code/code.html', 560, 460);
 }
 function openTerminal() {
-  openWindow('win-terminal', 'TERMINAL', 'applications/terminal/terminal.html', 480, 360);
+  return openWindow('win-terminal', 'TERMINAL', 'applications/terminal/terminal.html', 480, 360);
 }
 function openFiles() {
-  openWindow('win-files', 'FILES', 'applications/Files/files.html', 520, 420);
+  return openWindow('win-files', 'FILES', 'applications/Files/files.html', 520, 420);
 }
 function openSnake() {
-  openWindow('win-snake', 'SNAKE', 'applications/snake/snake.html', 470, 540);
+  return openWindow('win-snake', 'SNAKE', 'applications/snake/snake.html', 470, 540);
+}
+function openWelcome() {
+  return openWindow('win-welcome', 'WELCOME', 'applications/welcome/welcome.html', 540, 430, { singleton: true });
+}
+function openMonitor() {
+  return openWindow('win-monitor', 'MONITOR', 'applications/monitor/monitor.html', 560, 470);
+}
+function openPaint() {
+  return openWindow('win-paint', 'PAINT', 'applications/paint/paint.html', 700, 540);
+}
+function openViewer() {
+  return openWindow('win-viewer', 'VIEWER', 'applications/viewer/viewer.html', 600, 470);
 }
 
 
 
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
-    const wallpaper = document.getElementById('wallpaper');
-    if (wallpaper) {
-      wallpaper.style.backgroundImage = `url(../Wallpapers/${e.data.file})`;
+    applyWallpaper(e.data.file);
+    try {
+      localStorage.setItem('wallpaper', e.data.file);
+    } catch (err) {
+      pushNotification('wallpaper', 'set, but too big to remember after a reload', 5000);
     }
   }
   if (e.data?.type === 'setTheme') {
@@ -471,3 +512,21 @@ window.addEventListener('message', (e) => {
 });
 
 document.body.classList.toggle('wm-tiled', wmMode !== 'normal');
+
+
+
+function autostartWelcome() {
+  let skip = '0';
+  try {
+    skip = localStorage.getItem('skipWelcome');
+  } catch (e) {
+    skip = '0';
+  }
+  if (skip !== '1') openWelcome();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', autostartWelcome);
+} else {
+  autostartWelcome();
+}

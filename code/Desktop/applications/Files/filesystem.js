@@ -25,8 +25,12 @@
     return node;
   }
 
-  function notify() {
-    listeners.forEach(fn => { try { fn(); } catch (e) {} });
+  function notify(path) {
+    listeners.forEach(fn => { try { fn(path); } catch (e) {} });
+  }
+
+  function joinPath(parent, name) {
+    return splitPath(parent).concat(name).join('/');
   }
 
   window.WebOSFS = {
@@ -54,7 +58,7 @@
       if (name.includes('/')) return 'name cannot contain /';
       if (parent.children[name]) return 'already exists';
       parent.children[name] = { type: 'folder', name, children: {} };
-      notify();
+      notify(joinPath(parentPath, name));
       return null;
     },
 
@@ -67,7 +71,7 @@
       if (!/\.[A-Za-z0-9]+$/.test(name)) return 'needs an extension like .txt';
       if (parent.children[name]) return 'already exists';
       parent.children[name] = { type: 'file', name, content };
-      notify();
+      notify(joinPath(parentPath, name));
       return null;
     },
 
@@ -89,7 +93,7 @@
       } else {
         parent.children[name] = { type: 'file', name, content };
       }
-      notify();
+      notify(joinPath(parentPath, name));
       return null;
     },
 
@@ -100,14 +104,51 @@
       const parent = getNode(parts.join('/'));
       if (!parent || parent.type !== 'folder' || !parent.children[name]) return 'not found';
       delete parent.children[name];
-      notify();
+      notify(splitPath(path).join('/'));
       return null;
     },
 
     subscribe(fn) {
       listeners.push(fn);
     },
-   _pendingOpen: null,
+    _pendingOpen: null,
+    _pendingImage: null,
+
+    isImage(path) {
+      return /\.(png|jpe?g|gif|webp|svg)$/i.test(path || '');
+    },
+
+    requestOpen(path) {
+      if (this.isImage(path)) this.requestOpenInViewer(path);
+      else this.requestOpenInEditor(path);
+    },
+
+    requestOpenInViewer(path) {
+      this._pendingImage = path;
+
+      let win = document.querySelector('.app-window[data-app="win-viewer"]')
+             || document.getElementById('win-viewer');
+
+      if (!win) {
+        if (typeof openViewer === 'function') win = openViewer();
+      } else {
+        win.dataset.minimized = 'false';
+        win.style.display = '';
+        if (typeof setFocus === 'function') setFocus(win);
+        if (typeof relayout === 'function') relayout();
+      }
+
+      const frame = win ? win.querySelector('iframe') : null;
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'openImage', path }, '*');
+      }
+    },
+
+    consumePendingImage() {
+      const p = this._pendingImage;
+      this._pendingImage = null;
+      return p;
+    },
 
     requestOpenInEditor(path) {
       this._pendingOpen = path;
@@ -117,7 +158,7 @@
              || document.getElementById('win-code');
 
       if (!win) {
-        if (typeof openCode === 'function') win = openCode();  // neu -> code.js holt sich _pendingOpen beim laden
+        if (typeof openCode === 'function') win = openCode();
       } else {
         win.dataset.minimized = 'false';
         win.style.display = '';
