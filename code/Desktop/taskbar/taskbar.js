@@ -39,6 +39,33 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(animateIndicator);
   }
 
+  function spawnHearts(wrapper) {
+    const count = 5 + Math.floor(Math.random() * 3);
+
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const rect = wrapper.getBoundingClientRect();
+        if (!rect.width) return;
+
+        const heart = document.createElement('div');
+        heart.className = 'pet-heart';
+        heart.textContent = '\u2665';
+
+        // alternating sides, so they rise left and right of the animal
+        const side = i % 2 === 0 ? -1 : 1;
+        const spread = 6 + Math.random() * 14;
+        heart.style.left = (rect.left + rect.width / 2 + side * spread) + 'px';
+        heart.style.top = (rect.top + rect.height * 0.35) + 'px';
+        heart.style.setProperty('--drift', (side * (10 + Math.random() * 18)) + 'px');
+        heart.style.fontSize = (10 + Math.random() * 7) + 'px';
+        heart.style.animationDuration = (1100 + Math.random() * 700) + 'ms';
+
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 2000);
+      }, i * 120);
+    }
+  }
+
   function createPet(species) {
     const wrapper = document.createElement('div');
     wrapper.className = 'fox-wrapper';
@@ -54,97 +81,186 @@ document.addEventListener('DOMContentLoaded', () => {
       species,
       foxCurrentX: 0,
       foxTargetX: 0,
-      foxState: 'idle',
       facingRight: true,
-      wanderPauseUntil: 0,
-      wanderTargetX: null,
       isLying: false,
-      running: true
+      running: true,
+
+      // every pet gets its own character, otherwise they all do the same thing
+      pace: 0.6 + Math.random() * 0.9,
+      curiosity: 0.25 + Math.random() * 0.6,
+      laziness: Math.random(),
+      mood: 'wander',
+      moodUntil: 0,
+      wanderTargetX: null,
+      petUntil: 0,
     };
 
     const glowInit = getCurrentGlowFootprint();
     const foxWidth = wrapper.offsetWidth || 64;
     state.foxCurrentX = glowInit.left + Math.random() * Math.max(0, glowInit.width - foxWidth);
-    state.offsetX = (Math.random() - 0.5) * 70; // persönlicher Versatz, damit Tiere nicht alle exakt übereinander landen
 
-    function setWalkingState(walking) {
-      if (walking) {
+    function lieDown(ms) {
+      state.isLying = true;
+      wrapper.classList.remove('walking');
+      wrapper.classList.add('lying');
+      clearTimeout(state._lieTimer);
+      state._lieTimer = setTimeout(() => {
         wrapper.classList.remove('lying');
-        wrapper.classList.add('walking');
-      } else {
-        wrapper.classList.remove('walking');
-        if (!wrapper.classList.contains('lying')) {
-          const isInactive = performance.now() - lastMouseMoveTime > inactivityDelay;
-          if (isInactive && !state.isLying && Math.random() < 0.15) {
-            state.isLying = true;
-            wrapper.classList.add('lying');
-            setTimeout(() => {
-              wrapper.classList.remove('lying');
-              state.isLying = false;
-            }, 15000 + Math.random() * 5000);
-          }
-        }
-      }
+        state.isLying = false;
+      }, ms);
     }
 
-    state.evaluateZone = function evaluateZone() {
-      const foxWidth = wrapper.offsetWidth;
-      const glow = getCurrentGlowFootprint();
-      const leftEdgeBoundary = glow.left + glow.width / 3;
-      const rightEdgeBoundary = glow.left + (glow.width * 2) / 3;
-      const inOuterZone = mouseX < leftEdgeBoundary || mouseX > rightEdgeBoundary;
-      if (inOuterZone) {
-        const newTarget = Math.max(glow.left, Math.min(mouseX - foxWidth / 2 + state.offsetX, glow.right - foxWidth));
-        if (Math.abs(newTarget - state.foxTargetX) > idleThreshold) {
-          state.foxTargetX = newTarget;
-          state.foxState = 'following';
+    function setWalkingState(walking) {
+      if (state.isLying) return;
+      wrapper.classList.toggle('walking', walking);
+    }
+
+    const MIN_GAP = 1.05;
+    const WALK_START = 7;
+    const WALK_STOP = 2;
+    const SWITCH_DELAY = 220;
+
+    function crowded(x, width) {
+      return pets.some(other =>
+        other !== state && other.wrapper &&
+        Math.abs(x - other.foxCurrentX) < width * MIN_GAP);
+    }
+
+    // keeps pets from standing inside each other
+    function separation(x, width) {
+      let push = 0;
+      pets.forEach(other => {
+        if (other === state || !other.wrapper) return;
+        const gap = x - other.foxCurrentX;
+        const min = width * MIN_GAP;
+        if (Math.abs(gap) < min) {
+          const dir = gap === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(gap);
+          push += dir * (min - Math.abs(gap)) * 0.9;
         }
-      } else {
-        state.foxState = 'idle';
+      });
+      return push;
+    }
+
+    function pickMood(now, glow, width) {
+      const mouseFresh = now - lastMouseMoveTime < inactivityDelay;
+      const roll = Math.random();
+
+      if (mouseFresh && roll < state.curiosity) {
+        state.mood = 'follow';
+        state.moodUntil = now + 1500 + Math.random() * 2500;
+        return;
       }
-    };
+
+      if (roll < 0.25 + state.laziness * 0.35) {
+        state.mood = 'rest';
+        state.moodUntil = now + 2000 + Math.random() * 5000;
+        if (Math.random() < 0.45 && !crowded(state.foxCurrentX, width)) lieDown(4000 + Math.random() * 7000);
+        return;
+      }
+
+      state.mood = 'wander';
+      state.moodUntil = now + 2500 + Math.random() * 4000;
+      state.wanderTargetX = glow.left + Math.random() * Math.max(1, glow.width - width);
+    }
+
+    state.evaluateZone = function () {};
 
     function animateFox() {
       if (!state.running) return;
 
-      const glow = getCurrentGlowFootprint();
-      const foxWidth = wrapper.offsetWidth;
-      let desiredTarget;
-      const inactiveForAWhile = performance.now() - lastMouseMoveTime > inactivityDelay;
+      const now = performance.now();
+      // scale by real time, so a slow frame rate does not slow the animals down
+      const dt = Math.min(4, Math.max(0.5, (now - (state.lastFrame || now - 16)) / 16.7));
+      state.lastFrame = now;
 
-      if (state.foxState === 'following') {
-        desiredTarget = state.foxTargetX;
-      } else if (inactiveForAWhile) {
-        if (state.wanderTargetX === null || (Math.abs(state.wanderTargetX - state.foxCurrentX) <= idleThreshold && performance.now() > state.wanderPauseUntil)) {
-          state.wanderPauseUntil = performance.now() + 2500 + Math.random() * 2000;
-          state.wanderTargetX = glow.left + Math.random() * (glow.width - foxWidth);
-        }
-        desiredTarget = state.wanderTargetX;
-      } else {
-        desiredTarget = state.foxCurrentX;
+      const glow = getCurrentGlowFootprint();
+      const width = wrapper.offsetWidth || 64;
+
+      if (now < state.petUntil) {
+        wrapper.style.left = `${state.foxCurrentX}px`;
+        requestAnimationFrame(animateFox);
+        return;
       }
 
-      desiredTarget = Math.max(glow.left, Math.min(desiredTarget, glow.right - foxWidth));
+      if (now > state.moodUntil) pickMood(now, glow, width);
+
+      let desiredTarget = state.foxCurrentX;
+
+      if (state.mood === 'follow') {
+        // followers line up side by side instead of fighting over one spot
+        const followers = pets.filter(p => p.mood === 'follow');
+        const slot = Math.max(0, followers.indexOf(state));
+        const offset = (slot - (followers.length - 1) / 2) * width * MIN_GAP;
+        desiredTarget = mouseX - width / 2 + offset;
+      } else if (state.mood === 'wander' && state.wanderTargetX !== null) {
+        desiredTarget = state.wanderTargetX;
+      }
+
+      const resting = state.mood === 'rest' || state.isLying;
+
+      if (resting) {
+        // a resting animal must not slide around, so if someone crowds it,
+        // it gets up and walks off properly instead
+        if (crowded(state.foxCurrentX, width) && now > (state.shooUntil || 0)) {
+          state.shooUntil = now + 1200;
+          if (state.isLying) {
+            clearTimeout(state._lieTimer);
+            wrapper.classList.remove('lying');
+            state.isLying = false;
+          }
+          state.mood = 'wander';
+          state.moodUntil = now + 2500 + Math.random() * 2500;
+          state.wanderTargetX = Math.max(glow.left, Math.min(
+            state.foxCurrentX + (Math.random() < 0.5 ? -1 : 1) * width * 2,
+            glow.right - width));
+        }
+      } else {
+        desiredTarget += separation(state.foxCurrentX, width);
+      }
+
+      desiredTarget = Math.max(glow.left, Math.min(desiredTarget, glow.right - width));
+
       const diff = desiredTarget - state.foxCurrentX;
       const distance = Math.abs(diff);
 
-      if (distance > idleThreshold) {
+      // two thresholds plus a dwell time, otherwise the walk animation
+      // flickers on and off while the target wobbles by a pixel
+      if (!state.moving && distance > WALK_START) {
+        if (now - (state.lastSwitch || 0) > SWITCH_DELAY) {
+          state.moving = true;
+          state.lastSwitch = now;
+        }
+      } else if (state.moving && distance < WALK_STOP) {
+        if (now - (state.lastSwitch || 0) > SWITCH_DELAY) {
+          state.moving = false;
+          state.lastSwitch = now;
+        }
+      }
+
+      if (state.moving && !state.isLying) {
         const movingRight = diff > 0;
-        if (movingRight !== state.facingRight) {
+        if (movingRight !== state.facingRight && distance > WALK_START) {
           state.facingRight = movingRight;
           wrapper.style.transform = `scaleX(${state.facingRight ? 1 : -1})`;
         }
-        state.foxCurrentX += Math.sign(diff) * Math.min(speed, distance);
+        state.foxCurrentX += Math.sign(diff) * Math.min(speed * state.pace * dt, distance);
         setWalkingState(true);
       } else {
-        state.foxCurrentX = desiredTarget;
-        if (state.foxState === 'following') state.foxState = 'idle';
         setWalkingState(false);
       }
 
       wrapper.style.left = `${state.foxCurrentX}px`;
       requestAnimationFrame(animateFox);
     }
+
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.petUntil = performance.now() + 3200;
+      state.mood = 'rest';
+      state.moodUntil = state.petUntil + 1200;
+      lieDown(3600);
+      spawnHearts(wrapper);
+    });
 
     animateFox();
     return state;

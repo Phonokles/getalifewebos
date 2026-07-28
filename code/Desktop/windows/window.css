@@ -28,8 +28,45 @@
 
 /* nach win-open-anim, damit es beim schliessen die animation ueberschreibt */
 .app-window.win-closing {
-  animation: win-close 0.14s ease forwards;
+  animation: win-close 0.17s ease forwards;
   pointer-events: none;
+}
+
+.win-cross {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0.55;
+  color: rgb(var(--fg-rgb));
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              height 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.2s ease;
+  filter: drop-shadow(0 0 22px rgba(var(--fg-rgb), 0.22));
+}
+
+.win-cross svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* keeps the stroke in screen pixels, so growing does not fatten the line */
+.win-cross svg path {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 2;
+  transition: stroke-width 0.26s cubic-bezier(.3, 0, .2, 1);
+}
+
+.win-cross.grown svg path {
+  stroke-width: 1;
+}
+
+.win-cross.gone {
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .window-titlebar {
@@ -164,4 +201,88 @@
   background: rgba(var(--fg-rgb), 0.06);
   pointer-events: none;
   z-index: 20000;
+}
+.win-bar {
+  position: fixed;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(var(--fg-rgb));
+  opacity: 0.5;
+  z-index: 999999;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(var(--fg-rgb), 0.55);
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.2s ease;
+}
+
+.win-bar.gone {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.win-corners {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0;
+  color: rgb(var(--fg-rgb));
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              height 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.18s ease;
+}
+
+.win-corners.spread {
+  transition: left 0.3s cubic-bezier(.22, 1, .3, 1),
+              top 0.3s cubic-bezier(.22, 1, .3, 1),
+              width 0.3s cubic-bezier(.22, 1, .3, 1),
+              height 0.3s cubic-bezier(.22, 1, .3, 1),
+              opacity 0.2s ease;
+}
+
+.win-corners .c {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 2px solid currentColor;
+  filter: drop-shadow(0 0 10px rgba(var(--fg-rgb), 0.5));
+  transition: width 0.3s cubic-bezier(.22, 1, .3, 1),
+              height 0.3s cubic-bezier(.22, 1, .3, 1);
+}
+
+.win-corners.spread .c {
+  width: 30px;
+  height: 30px;
+}
+
+.win-corners .tl {
+  top: 0; left: 0;
+  border-right: none; border-bottom: none;
+  border-top-left-radius: 4px;
+}
+
+.win-corners .tr {
+  top: 0; right: 0;
+  border-left: none; border-bottom: none;
+  border-top-right-radius: 4px;
+}
+
+.win-corners .bl {
+  bottom: 0; left: 0;
+  border-right: none; border-top: none;
+  border-bottom-left-radius: 4px;
+}
+
+.win-corners .br {
+  bottom: 0; right: 0;
+  border-left: none; border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+.win-corners.gone {
+  opacity: 0;
+  transition: opacity 0.24s ease;
 }

@@ -9,6 +9,8 @@
     content: 'welcome to your files [*_*]\n\neverything here lives in RAM only.\nreload the page and it is gone - so download\nanything you want to keep (Code app > Add locally).\n'
   };
 
+  root.children['Pictures'] = { type: 'folder', name: 'Pictures', children: {} };
+
   const listeners = [];
 
  

@@ -113,8 +113,8 @@ document.getElementById('btn-wall').addEventListener('click', (e) => {
   const item = items[index];
   if (!item) return;
 
-  // wallpapers go by filename, drawings go as the data url itself
-  const file = item.from === 'wallpaper' ? item.name : item.src;
+  // both go by reference, so localStorage stays small
+  const file = item.from === 'wallpaper' ? item.name : item.from;
   window.parent.postMessage({ type: 'setWallpaper', file }, '*');
 
   const btn = e.currentTarget;

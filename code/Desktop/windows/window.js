@@ -282,19 +282,140 @@ function setupResize(win) {
     });
   });
 }
-function applyWallpaper(value) {
-  const wallpaper = document.getElementById('wallpaper');
-  if (!wallpaper || !value) return;
+const BUILTIN_WALLPAPERS = ['Nightforrest.jpg', 'dayforrest.jpg'];
 
-  wallpaper.style.backgroundImage = value.startsWith('data:')
-    ? `url("${value}")`
-    : `url(../Wallpapers/${value})`;
+function wallpaperUrl(value) {
+  if (!value) return null;
+  if (value.startsWith('data:')) return value;
+  if (BUILTIN_WALLPAPERS.includes(value)) return '../Wallpapers/' + value;
+
+  const data = window.WebOSFS ? window.WebOSFS.readFile(value) : null;
+  return (data && data.startsWith('data:image')) ? data : null;
 }
 
-applyWallpaper(localStorage.getItem('wallpaper') || 'Nightforrest.jpg');
+function applyWallpaper(value) {
+  const el = document.getElementById('wallpaper');
+  if (!el) return false;
+
+  const url = wallpaperUrl(value);
+  if (!url) return false;
+
+  el.style.backgroundImage = `url("${url}")`;
+  return true;
+}
+
+// a picture from the filesystem is gone after a reload, so fall back quietly
+if (!applyWallpaper(localStorage.getItem('wallpaper'))) {
+  localStorage.setItem('wallpaper', BUILTIN_WALLPAPERS[0]);
+  applyWallpaper(BUILTIN_WALLPAPERS[0]);
+}
+
+// the x lifts off the titlebar, grows to the window's smaller side and centers
+// itself, then the window goes, then the x goes
+function flyingCross(win) {
+  const btn = win.querySelector('.window-btn.close');
+  const svg = btn && btn.querySelector('svg');
+  if (!svg) return null;
+
+  const from = svg.getBoundingClientRect();
+  const box = win.getBoundingClientRect();
+  if (!from.width || !box.width) return null;
+
+  const size = Math.min(box.width, box.height);
+
+  const ghost = document.createElement('div');
+  ghost.className = 'win-cross';
+  ghost.innerHTML = svg.outerHTML;
+  ghost.style.left = from.left + 'px';
+  ghost.style.top = from.top + 'px';
+  ghost.style.width = from.width + 'px';
+  ghost.style.height = from.height + 'px';
+  document.body.appendChild(ghost);
+
+  btn.style.visibility = 'hidden';
+
+  // width/height instead of scale, so the svg is redrawn sharp at every size
+  requestAnimationFrame(() => {
+    ghost.style.left = (box.left + box.width / 2 - size / 2) + 'px';
+    ghost.style.top = (box.top + box.height / 2 - size / 2) + 'px';
+    ghost.style.width = size + 'px';
+    ghost.style.height = size + 'px';
+    ghost.style.opacity = '1';
+    ghost.classList.add('grown');
+  });
+
+  return ghost;
+}
+
+// the bar grows to the window's width, then the window rides up into it.
+// the clip line moves down inside the window exactly as fast as the window
+// moves up, so the cut stays glued to the bar and nothing pokes out on top
+function minimizeWindow(win) {
+  if (win.dataset.closing === 'true' || win.dataset.shredding === 'true') return;
+
+  const btn = win.querySelector('.window-btn.minimize');
+  const svg = btn && btn.querySelector('svg');
+  const box = win.getBoundingClientRect();
+
+  const finish = () => {
+    win.dataset.shredding = '';
+    win.style.transition = '';
+    win.style.transform = '';
+    win.style.clipPath = '';
+    win.style.display = 'none';
+    if (btn) btn.style.visibility = '';
+  };
+
+  if (!svg || !box.width) {
+    win.dataset.minimized = 'true';
+    finish();
+    relayout();
+    return;
+  }
+
+  window.WebOSSound?.minimize();
+  win.dataset.shredding = 'true';
+  win.dataset.minimized = 'true';
+  relayout();
+
+  const icon = svg.getBoundingClientRect();
+
+  const bar = document.createElement('div');
+  bar.className = 'win-bar';
+  bar.style.left = (icon.left + icon.width * 0.25) + 'px';
+  bar.style.top = (icon.top + icon.height * 0.75) + 'px';
+  bar.style.width = (icon.width * 0.5) + 'px';
+  document.body.appendChild(bar);
+
+  btn.style.visibility = 'hidden';
+
+  // clip-path only animates between two inset() values, never from none
+  win.style.transform = 'translateY(0px)';
+  win.style.clipPath = 'inset(0px 0 0 0)';
+
+  requestAnimationFrame(() => {
+    bar.style.left = box.left + 'px';
+    bar.style.top = box.top + 'px';
+    bar.style.width = box.width + 'px';
+    bar.style.opacity = '1';
+  });
+
+  setTimeout(() => {
+    win.style.transition = 'transform 0.34s cubic-bezier(.5, 0, .75, 0), clip-path 0.34s cubic-bezier(.5, 0, .75, 0)';
+    win.style.transform = `translateY(${-box.height}px)`;
+    win.style.clipPath = `inset(${box.height}px 0 0 0)`;
+  }, 270);
+
+  setTimeout(() => {
+    finish();
+    bar.classList.add('gone');
+    setTimeout(() => bar.remove(), 220);
+  }, 640);
+}
 
 function destroyWindow(win) {
   if (win.dataset.closing === 'true') return;
+  window.WebOSSound?.close();
   win.dataset.closing = 'true';
 
   const idx = tileOrder.indexOf(win.id);
@@ -307,23 +428,108 @@ function destroyWindow(win) {
   }
   relayout();
 
-  // out of the layout now, so it fades where it sits
-  win.classList.add('win-closing');
-  setTimeout(() => win.remove(), 160);
+  const ghost = flyingCross(win);
+
+  if (!ghost) {
+    win.classList.add('win-closing');
+    setTimeout(() => win.remove(), 160);
+    return;
+  }
+
+  setTimeout(() => {
+    win.classList.add('win-closing');
+    setTimeout(() => win.remove(), 170);
+  }, 260);
+
+  setTimeout(() => {
+    ghost.classList.add('gone');
+    setTimeout(() => ghost.remove(), 220);
+  }, 470);
+}
+
+// the icon flies to the middle of the window, splits into four brackets that
+// shoot into the screen corners and grow, and the window follows them out
+function fullscreenPull(win, done) {
+  const btn = win.querySelector('.window-btn.fullscreen');
+  const svg = btn && btn.querySelector('svg');
+  const box = win.getBoundingClientRect();
+
+  if (!svg || !box.width) {
+    done();
+    return;
+  }
+
+  const icon = svg.getBoundingClientRect();
+
+  const frame = document.createElement('div');
+  frame.className = 'win-corners';
+  frame.innerHTML = '<span class="c tl"></span><span class="c tr"></span>' +
+                    '<span class="c bl"></span><span class="c br"></span>';
+  frame.style.left = icon.left + 'px';
+  frame.style.top = icon.top + 'px';
+  frame.style.width = icon.width + 'px';
+  frame.style.height = icon.height + 'px';
+  document.body.appendChild(frame);
+
+  btn.style.visibility = 'hidden';
+
+  const midW = Math.min(96, box.width * 0.3);
+  const midH = Math.min(70, box.height * 0.3);
+
+  requestAnimationFrame(() => {
+    frame.style.opacity = '1';
+    frame.style.left = (box.left + box.width / 2 - midW / 2) + 'px';
+    frame.style.top = (box.top + box.height / 2 - midH / 2) + 'px';
+    frame.style.width = midW + 'px';
+    frame.style.height = midH + 'px';
+  });
+
+  setTimeout(() => {
+    frame.classList.add('spread');
+    frame.style.left = '0px';
+    frame.style.top = '0px';
+    frame.style.width = window.innerWidth + 'px';
+    frame.style.height = window.innerHeight + 'px';
+  }, 260);
+
+  setTimeout(() => {
+    done();
+    if (btn) btn.style.visibility = '';
+  }, 430);
+
+  setTimeout(() => {
+    frame.classList.add('gone');
+    setTimeout(() => frame.remove(), 240);
+  }, 560);
 }
 
 function toggleFullscreen(win) {
   const on = win.dataset.fullscreen === 'true';
-  if (!on) {
-    if (wmMode === 'normal') saveFloatRect(win);
-    win.dataset.fullscreen = 'true';
-    setFocus(win);
-  } else {
-    win.dataset.fullscreen = 'false';
-    if (wmMode === 'normal') restoreFloatRect(win);
+
+  const apply = () => {
+    if (!on) {
+      if (wmMode === 'normal') saveFloatRect(win);
+      win.dataset.fullscreen = 'true';
+      setFocus(win);
+    } else {
+      win.dataset.fullscreen = 'false';
+      if (wmMode === 'normal') restoreFloatRect(win);
+    }
+    win.classList.toggle('is-fullscreen', !on);
+    relayout();
+  };
+
+  if (on || win.dataset.pulling === 'true') {
+    apply();
+    return;
   }
-  win.classList.toggle('is-fullscreen', !on);
-  relayout();
+
+  window.WebOSSound?.fullscreen();
+  win.dataset.pulling = 'true';
+  fullscreenPull(win, () => {
+    win.dataset.pulling = '';
+    apply();
+  });
 }
 
 
@@ -409,15 +615,14 @@ function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
   });
 
   win.querySelector('.window-btn.minimize').addEventListener('click', () => {
-    win.dataset.minimized = 'true';
-    win.style.display = 'none';
-    relayout();
+    minimizeWindow(win);
   });
 
   win.querySelector('.window-btn.fullscreen').addEventListener('click', () => {
     toggleFullscreen(win);
   });
 
+  window.WebOSSound?.open();
   win.classList.add('win-open-anim');
   setTimeout(() => win.classList.remove('win-open-anim'), 200);
 
@@ -491,11 +696,14 @@ function openViewer() {
 
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'setWallpaper') {
-    applyWallpaper(e.data.file);
-    try {
-      localStorage.setItem('wallpaper', e.data.file);
-    } catch (err) {
-      pushNotification('wallpaper', 'set, but too big to remember after a reload', 5000);
+    if (applyWallpaper(e.data.file)) {
+      try {
+        localStorage.setItem('wallpaper', e.data.file);
+      } catch (err) {
+        pushNotification('wallpaper', 'set, but too big to remember after a reload', 5000);
+      }
+    } else {
+      pushNotification('wallpaper [-_-]', 'could not find ' + e.data.file, 4000);
     }
   }
   if (e.data?.type === 'setTheme') {
@@ -530,3 +738,4 @@ if (document.readyState === 'loading') {
 } else {
   autostartWelcome();
 }
+

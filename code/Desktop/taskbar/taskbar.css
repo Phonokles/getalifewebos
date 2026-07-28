@@ -1,20 +1,3 @@
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 100;
-  text-align: center;
-  padding: 9px;
-  border-top: 1px solid rgba(var(--fg-rgb), 0.15);
-  color: rgba(var(--fg-rgb),0.4);
-  font-size: 0.85rem;
-  background: rgb(var(--bg-rgb));
-  margin-top: 0;
-  overflow: visible;
-  min-height: 40px;
-}
-
 /* white glow line, same accent language as the personal website */
 .footer-indicator {
   position: absolute;
@@ -34,7 +17,8 @@
   margin-bottom: -8px;
   width: 64px;
   height: 64px;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   will-change: transform;
   z-index: 9999;
 }
@@ -106,4 +90,27 @@
 
 @keyframes splatGrow {
   to { transform: translate(-50%, -50%) scale(var(--splat-scale, 1)); }
+}
+.pet-heart {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  color: #e0607a;
+  text-shadow: 0 0 8px rgba(224, 96, 122, 0.7);
+  animation: heart-rise 1.4s ease-out forwards;
+}
+
+@keyframes heart-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.4);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--drift, 0px)), -46px) scale(0.85);
+  }
 }

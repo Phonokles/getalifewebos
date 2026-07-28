@@ -5,31 +5,72 @@ const wallpapers = [
 
 const THUMB_PATH = '../../../Wallpapers/';
 
+const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp)$/i;
+
+function fsImages() {
+  if (!FS) return [];
+  const out = [];
+  (function walk(path) {
+    FS.list(path).forEach(item => {
+      const full = path ? path + '/' + item.name : item.name;
+      if (item.type === 'folder') return walk(full);
+      if (!IMAGE_EXT.test(item.name)) return;
+      const data = FS.readFile(full) || '';
+      if (data.startsWith('data:image')) out.push({ name: item.name, path: full, src: data });
+    });
+  })('');
+  return out;
+}
+
+function wallpaperCard(file, src, label) {
+  const card = document.createElement('button');
+  card.className = 'wallpaper-card';
+  card.dataset.file = file;
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = label;
+
+  const name = document.createElement('span');
+  name.textContent = label;
+
+  const check = document.createElement('span');
+  check.className = 'wallpaper-check';
+  check.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  card.appendChild(img);
+  card.appendChild(check);
+  card.appendChild(name);
+  card.addEventListener('click', () => applyWallpaper(file, card));
+  return card;
+}
+
 function renderWallpapers() {
   const grid = document.getElementById('wallpaper-grid');
+  const current = localStorage.getItem('wallpaper');
+  grid.innerHTML = '';
 
   wallpapers.forEach(file => {
-    const card = document.createElement('button');
-    card.className = 'wallpaper-card';
-    card.dataset.file = file;
+    grid.appendChild(wallpaperCard(file, THUMB_PATH + file, file.replace(/\.[^.]+$/, '')));
+  });
 
-    const img = document.createElement('img');
-    img.src = THUMB_PATH + file;
-    img.alt = file;
+  fsImages().forEach(img => {
+    grid.appendChild(wallpaperCard(img.path, img.src, img.name.replace(/\.[^.]+$/, '')));
+  });
 
-    const label = document.createElement('span');
-    label.textContent = file.replace(/\.[^.]+$/, '');
+  const active = grid.querySelector(`.wallpaper-card[data-file="${current}"]`);
+  if (active) active.classList.add('active');
+}
 
-    const check = document.createElement('span');
-    check.className = 'wallpaper-check';
-    check.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-
-    card.appendChild(img);
-    card.appendChild(check);
-    card.appendChild(label);
-    card.addEventListener('click', () => applyWallpaper(file, card));
-
-    grid.appendChild(card);
+// the parent keeps this listener even after this window is gone, so it has to
+// check that it is still alive before touching anything
+if (FS) {
+  FS.subscribe(() => {
+    const frame = window.frameElement;
+    if (frame && !frame.isConnected) return;
+    if (!document.getElementById('wallpaper-grid')) return;
+    renderWallpapers();
   });
 }
 function applyWallpaper(file, card) {

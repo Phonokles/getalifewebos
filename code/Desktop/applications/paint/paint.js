@@ -7,13 +7,32 @@ window.addEventListener('message', (e) => {
 });
 
 const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
+const PICTURES = 'Pictures';
+const ART_W = 1000;
+const ART_H = 700;
 
-const galleryEl = document.getElementById('gallery');
-const studioEl = document.getElementById('studio');
-const grid = document.getElementById('gallery-grid');
-const canvas = document.getElementById('canvas');
-const stage = document.getElementById('stage');
-const nameEl = document.getElementById('filename');
+const need = (id) => document.getElementById(id);
+
+const galleryEl = need('gallery');
+const studioEl = need('studio');
+const grid = need('gallery-grid');
+const canvas = need('canvas');
+const stage = need('stage');
+const nameEl = need('filename');
+
+// a stale cached paint.html would leave these missing and the app would just
+// go black, so say what is wrong instead
+const missing = ['gallery', 'studio', 'gallery-grid', 'canvas', 'stage', 'filename']
+  .filter(id => !need(id));
+
+if (missing.length) {
+  document.body.innerHTML =
+    '<div style="padding:20px;font:0.72rem/1.9 monospace;letter-spacing:1px;color:#e05252">' +
+    'paint.html is out of date, missing: ' + missing.join(', ') +
+    '<br><br>hard reload the page with ctrl+shift+r</div>';
+  throw new Error('[paint] outdated paint.html, missing: ' + missing.join(', '));
+}
+
 const ctx = canvas.getContext('2d');
 
 let color = '#141414';
@@ -91,18 +110,17 @@ function openCanvas(item) {
   redoStack.length = 0;
 
   requestAnimationFrame(() => {
-    fitCanvas(true);
     if (item) {
       const img = new Image();
       img.onload = () => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        const s = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
-        ctx.drawImage(img, 0, 0, img.width * s, img.height * s);
+        newArtboard(img.naturalWidth || ART_W, img.naturalHeight || ART_H);
+        ctx.drawImage(img, 0, 0);
         pushUndo();
+        updateUndoButtons();
       };
       img.src = item.src;
     } else {
+      newArtboard(ART_W, ART_H);
       pushUndo();
     }
     updateUndoButtons();
@@ -116,35 +134,17 @@ function nextName() {
   return `drawing${n}.png`;
 }
 
-function fitCanvas(reset) {
-  const w = Math.max(1, Math.floor(stage.clientWidth - 28));
-  const h = Math.max(1, Math.floor(stage.clientHeight - 28));
-  if (!reset && canvas.width === w && canvas.height === h) return;
-
-  const old = document.createElement('canvas');
-  old.width = canvas.width;
-  old.height = canvas.height;
-  if (canvas.width && canvas.height) old.getContext('2d').drawImage(canvas, 0, 0);
-
+// the drawing has its own fixed resolution. the window only scales how it is
+// shown, so resizing never touches a single pixel
+function newArtboard(w, h) {
   canvas.width = w;
   canvas.height = h;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
-  if (!reset && old.width && old.height) ctx.drawImage(old, 0, 0);
-
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
 
-function refit() {
-  if (!studioEl.classList.contains('hidden')) fitCanvas(false);
-}
-
-if (typeof ResizeObserver === 'function') {
-  new ResizeObserver(refit).observe(stage);
-} else {
-  window.addEventListener('resize', refit);
-}
 
 function pushUndo() {
   if (!canvas.width) return;
@@ -385,10 +385,14 @@ function fileName() {
 
 function save() {
   if (!FS || !canvas.width) return;
+
+  if (!FS.exists(PICTURES)) FS.createFolder('', PICTURES);
+
   const name = fileName();
-  if (openedFrom && openedFrom !== name) FS.remove(openedFrom);
-  FS.writeFile('', name, canvas.toDataURL('image/png'));
-  openedFrom = name;
+  const path = PICTURES + '/' + name;
+  if (openedFrom && openedFrom !== path) FS.remove(openedFrom);
+  FS.writeFile(PICTURES, name, canvas.toDataURL('image/png'));
+  openedFrom = path;
 }
 
 document.getElementById('tool-save').addEventListener('click', (e) => {

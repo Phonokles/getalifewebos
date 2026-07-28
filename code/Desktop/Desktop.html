@@ -103,6 +103,13 @@
         <button class="ws-dot" data-ws="3" onclick="switchWorkspace(3)">3</button>
         <button class="ws-dot" data-ws="4" onclick="switchWorkspace(4)">4</button>
       </div>
+      <button class="vol-btn" id="vol-btn" title="Volume">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5L6 9H3v6h3l5 4z"/>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" class="vol-wave1"/>
+          <path d="M18.5 5.5a9 9 0 0 1 0 13" class="vol-wave2"/>
+        </svg>
+      </button>
       <button class="power-btn" id="power-btn" title="System menu">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
           <path d="M12 2v7"/>
@@ -111,6 +118,14 @@
       </button>
     </div>
   </footer>
+
+  <div class="vol-popup" id="vol-popup">
+    <div class="vol-slider" id="vol-slider">
+      <div class="vol-track"><div class="vol-fill" id="vol-fill"></div></div>
+      <span class="vol-thumb" id="vol-thumb"></span>
+    </div>
+    <span class="vol-value" id="vol-value">50</span>
+  </div>
 
   <div class="tb-preview" id="tb-preview"></div>
   <div class="hot-corner" id="hot-corner"></div>
@@ -130,6 +145,7 @@
   <script src="applications/Files/filesystem.js"></script>
   <script src="taskbar/taskbar.js"></script>
   <script src="../lock/lock.js"></script>
+  <script src="sound/sound.js"></script>
   <script src="windows/window.js"></script>
   <script src="Overview/overview.js"></script>
   <script src="widgets/todo.js"></script>

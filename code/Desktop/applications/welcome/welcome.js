@@ -6,20 +6,28 @@ window.addEventListener('message', (e) => {
   }
 });
 
-const svg = (inner) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+// optimised png first, the original jpg as a fallback
+const ORIGINAL = {
+  terminal: 'terminal', files: 'files', code: 'code', paint: 'draw',
+  viewer: 'imageviewer', monitor: 'monitor', calculator: 'calc', snake: 'snake',
+};
+
+const png = (name) => {
+  const alt = ORIGINAL[name] ? `../../../assets/${ORIGINAL[name]}.jpg` : '';
+  return `<img class="wel-icon" src="../../../assets/icons/${name}.png" data-alt="${alt}" alt="">`;
+};
 
 const APPS = [
-  ['terminal', 'openTerminal', svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="12" y1="15" x2="16" y2="15"/>')],
-  ['files', 'openFiles', svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>')],
-  ['code', 'openCode', svg('<polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/>')],
-  ['paint', 'openPaint', svg('<path d="M15.5 3.5l5 5L9 20H4v-5z"/><line x1="13" y1="6" x2="18" y2="11"/>')],
-  ['viewer', 'openViewer', svg('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-6 6-2-2-5 5"/>')],
-  ['monitor', 'openMonitor', svg('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M6 13l3-4 2.5 3L14 9l4 4"/><line x1="9" y1="21" x2="15" y2="21"/>')],
-  ['calc', 'openCalculator', svg('<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>')],
-  ['todo', 'openTodo', svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>')],
-  ['snake', 'openSnake', svg('<path d="M4 17V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4"/><circle cx="19" cy="7" r="0.6" fill="currentColor"/>')],
-  ['settings', 'openSettings', svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>')],
+  ['terminal', 'openTerminal', png('terminal')],
+  ['files', 'openFiles', png('files')],
+  ['code', 'openCode', png('code')],
+  ['paint', 'openPaint', png('paint')],
+  ['viewer', 'openViewer', png('viewer')],
+  ['monitor', 'openMonitor', png('monitor')],
+  ['calc', 'openCalculator', png('calculator')],
+  ['snake', 'openSnake', png('snake')],
+  ['todo', 'openTodo', png('todo')],
+  ['settings', 'openSettings', png('settings')],
 ];
 
 const grid = document.getElementById('app-grid');
@@ -27,6 +35,21 @@ const grid = document.getElementById('app-grid');
 grid.innerHTML = APPS.map(([name, , icon]) =>
   `<button class="wel-app">${icon}<span>${name}</span></button>`
 ).join('');
+
+grid.querySelectorAll('.wel-icon').forEach(img => {
+  img.addEventListener('error', () => {
+    if (img.dataset.alt) {
+      const next = img.dataset.alt;
+      img.dataset.alt = '';
+      img.src = next;
+      return;
+    }
+    const span = document.createElement('span');
+    span.className = 'wel-icon-missing';
+    span.textContent = (img.closest('.wel-app')?.querySelector('span')?.textContent || '?')[0].toUpperCase();
+    img.replaceWith(span);
+  });
+});
 
 grid.querySelectorAll('.wel-app').forEach((el, i) => {
   el.addEventListener('click', () => {
@@ -52,5 +75,3 @@ function updateAge() {
 }
 
 updateAge();
-
-//------------------------------gngznvskderitgoqcnuzuiyjnmyyjczydvrljonvzcncmhl

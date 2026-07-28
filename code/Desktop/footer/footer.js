@@ -1,20 +1,29 @@
 (function () {
 
-  const svg = (inner) =>
-    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  // optimised png first, the original jpg as a fallback, so it works whether
+  // or not assets/icons has been set up
+  const ORIGINAL = {
+    terminal: 'terminal', files: 'files', code: 'code', paint: 'draw',
+    viewer: 'imageviewer', monitor: 'monitor', calculator: 'calc', snake: 'snake',
+  };
+
+  const png = (name) => {
+    const alt = ORIGINAL[name] ? `../assets/${ORIGINAL[name]}.jpg` : '';
+    return `<img class="tb-icon" src="../assets/icons/${name}.png" data-alt="${alt}" alt="">`;
+  };
 
   const APPS = {
-    'win-terminal': { label: 'terminal', open: 'openTerminal', icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="12" y1="15" x2="16" y2="15"/>') },
-    'win-files': { label: 'files', open: 'openFiles', icon: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>') },
-    'win-settings': { label: 'settings', open: 'openSettings', icon: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>') },
-    'win-code': { label: 'code', open: 'openCode', icon: svg('<polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/>') },
-    'win-paint': { label: 'paint', open: 'openPaint', icon: svg('<path d="M15.5 3.5l5 5L9 20H4v-5z"/><line x1="13" y1="6" x2="18" y2="11"/>') },
-    'win-viewer': { label: 'viewer', open: 'openViewer', icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-6 6-2-2-5 5"/>') },
-    'win-monitor': { label: 'monitor', open: 'openMonitor', icon: svg('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M6 13l3-4 2.5 3L14 9l4 4"/><line x1="9" y1="21" x2="15" y2="21"/>') },
-    'win-calculator': { label: 'calculator', open: 'openCalculator', icon: svg('<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>') },
-    'win-todo': { label: 'todo', open: 'openTodo', icon: svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>') },
-    'win-snake': { label: 'snake', open: 'openSnake', icon: svg('<path d="M4 17V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4"/><circle cx="19" cy="7" r="0.6" fill="currentColor"/>') },
-    'win-welcome': { label: 'welcome', open: 'openWelcome', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="10" r="0.6" fill="currentColor"/><circle cx="15" cy="10" r="0.6" fill="currentColor"/>') },
+    'win-terminal': { label: 'terminal', open: 'openTerminal', icon: png('terminal') },
+    'win-files': { label: 'files', open: 'openFiles', icon: png('files') },
+    'win-settings': { label: 'settings', open: 'openSettings', icon: png('settings') },
+    'win-code': { label: 'code', open: 'openCode', icon: png('code') },
+    'win-paint': { label: 'paint', open: 'openPaint', icon: png('paint') },
+    'win-viewer': { label: 'viewer', open: 'openViewer', icon: png('viewer') },
+    'win-monitor': { label: 'monitor', open: 'openMonitor', icon: png('monitor') },
+    'win-calculator': { label: 'calculator', open: 'openCalculator', icon: png('calculator') },
+    'win-todo': { label: 'todo', open: 'openTodo', icon: png('todo') },
+    'win-snake': { label: 'snake', open: 'openSnake', icon: png('snake') },
+    'win-welcome': { label: 'welcome', open: 'openWelcome', icon: png('welcome') },
   };
 
   const PINNED = ['win-terminal', 'win-files', 'win-settings'];
@@ -34,6 +43,21 @@
     running.forEach(a => parts.push(btn(a)));
 
     bar.innerHTML = parts.join('');
+
+    bar.querySelectorAll('.tb-icon').forEach(img => {
+      img.addEventListener('error', () => {
+        const fallback = img.dataset.alt;
+        if (fallback) {
+          img.dataset.alt = '';
+          img.src = fallback;
+          return;
+        }
+        const btn = img.closest('.taskbar-app-btn');
+        if (!btn) return;
+        btn.classList.add('no-icon');
+        btn.textContent = (APPS[btn.dataset.app]?.label || '?')[0].toUpperCase();
+      });
+    });
 
     bar.querySelectorAll('.taskbar-app-btn').forEach(el => {
       const app = el.dataset.app;
@@ -142,6 +166,7 @@
   preview.addEventListener('mouseleave', hidePreviewSoon);
 
   new MutationObserver(() => {
+    if (typeof document === 'undefined' || !document.body) return;
     render();
     if (preview.classList.contains('open')) hidePreview();
   }).observe(document.body, {
@@ -181,19 +206,71 @@
   document.getElementById('footer-clock').addEventListener('click', (e) => {
     e.stopPropagation();
     powerPopup.classList.remove('open');
+    volPopup.classList.remove('open');
     clockPopup.classList.toggle('open');
     if (clockPopup.classList.contains('open')) buildCalendar();
   });
 
+  const volPopup = document.getElementById('vol-popup');
+  const volSlider = document.getElementById('vol-slider');
+  const volFill = document.getElementById('vol-fill');
+  const volThumb = document.getElementById('vol-thumb');
+  const volValue = document.getElementById('vol-value');
+  const volBtn = document.getElementById('vol-btn');
+
+  function paintVolume(v) {
+    const pct = Math.round(v * 100);
+    volFill.style.width = pct + '%';
+    volThumb.style.left = pct + '%';
+    volValue.textContent = pct;
+    volBtn.classList.toggle('muted', v <= 0);
+    volBtn.classList.toggle('quiet', v > 0 && v < 0.4);
+  }
+
+  paintVolume(window.WebOSSound ? window.WebOSSound.getVolume() : 0.5);
+
+  let volDragging = false;
+
+  function volFromEvent(e) {
+    const r = volSlider.getBoundingClientRect();
+    if (!r.width) return;
+    const v = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    window.WebOSSound?.setVolume(v);
+    paintVolume(v);
+  }
+
+  volSlider.addEventListener('pointerdown', (e) => {
+    volDragging = true;
+    volSlider.setPointerCapture?.(e.pointerId);
+    volFromEvent(e);
+  });
+  volSlider.addEventListener('pointermove', (e) => { if (volDragging) volFromEvent(e); });
+  volSlider.addEventListener('pointerup', () => {
+    volDragging = false;
+    window.WebOSSound?.blip();
+  });
+  volSlider.addEventListener('pointercancel', () => { volDragging = false; });
+
+  volBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clockPopup.classList.remove('open');
+    powerPopup.classList.remove('open');
+    volPopup.classList.toggle('open');
+  });
+
+  volPopup.addEventListener('click', (e) => e.stopPropagation());
+
   document.getElementById('power-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     clockPopup.classList.remove('open');
+    volPopup.classList.remove('open');
     powerPopup.classList.toggle('open');
   });
 
   document.addEventListener('click', () => {
     clockPopup.classList.remove('open');
     powerPopup.classList.remove('open');
+    volPopup.classList.remove('open');
   });
 
   clockPopup.addEventListener('click', (e) => e.stopPropagation());

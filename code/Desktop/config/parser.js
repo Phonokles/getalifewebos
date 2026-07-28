@@ -20,6 +20,13 @@ window.ConfigParser = (function () {
       return { error: `"${raw}" is not allowed, use: true or false` };
     }
 
+    if (def.type === 'text') {
+      if (def.pattern && !def.pattern.test(raw)) {
+        return { error: `"${raw}" does not look like ${def.hint || 'a valid value'}` };
+      }
+      return { value: raw };
+    }
+
     if (def.type === 'int') {
       if (!/^-?\d+$/.test(raw)) return { error: `"${raw}" is not a whole number` };
       const n = parseInt(raw, 10);
