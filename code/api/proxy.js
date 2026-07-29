@@ -42,6 +42,26 @@ const HOOK = `<script>
 }());
 </script>`;
 
+function errorPage(title, detail, url) {
+  const safe = String(detail || '').replace(/[<>&]/g, '');
+  const link = String(url || '').replace(/"/g, '&quot;');
+  return `<!doctype html><meta charset="utf-8">
+<style>
+  body { margin:0; height:100vh; display:flex; flex-direction:column;
+         align-items:center; justify-content:center; gap:14px; text-align:center;
+         background:#0e0e0e; color:#bbb; font:13px/1.9 monospace; padding:30px; }
+  b { color:#fff; font-weight:normal; font-size:15px; letter-spacing:2px; }
+  p { max-width:420px; color:#777; margin:0; }
+  a { color:#7fbcf5; text-decoration:none; border:1px solid #333; padding:8px 14px;
+      border-radius:7px; }
+  a:hover { background:#1a1a1a; }
+</style>
+<div>[-_-]</div>
+<b>${title}</b>
+<p>${safe}</p>
+<a href="${link}" target="_blank" rel="noopener">open in a real tab &#8599;</a>`;
+}
+
 export default async function handler(req, res) {
   const target = req.query.url;
 
@@ -68,21 +88,46 @@ export default async function handler(req, res) {
     return;
   }
 
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), 8000);
+
   try {
     const upstream = await fetch(parsed.href, {
       redirect: 'follow',
+      signal: stop.signal,
       headers: {
         'user-agent': UA,
-        'accept': req.headers.accept || 'text/html,application/xhtml+xml,*/*',
-        'accept-language': req.headers['accept-language'] || 'en,de;q=0.8',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-language': req.headers['accept-language'] || 'de,en;q=0.8',
+        'upgrade-insecure-requests': '1',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
       },
     });
+    clearTimeout(timer);
+
+    if (upstream.status >= 400) {
+      res.setHeader('content-type', 'text/html; charset=utf-8');
+      res.status(200).send(errorPage(
+        'the site answered ' + upstream.status,
+        upstream.status === 403
+          ? 'it refuses requests coming from a server instead of a normal browser. '
+            + 'cloudflare and similar guards do this.'
+          : 'the page could not be fetched.',
+        parsed.href));
+      return;
+    }
 
     const type = upstream.headers.get('content-type') || 'application/octet-stream';
 
     upstream.headers.forEach((value, key) => {
-      if (!STRIP.includes(key.toLowerCase()) && key.toLowerCase() !== 'set-cookie') {
+      const k = key.toLowerCase();
+      if (STRIP.includes(k) || k === 'set-cookie') return;
+      try {
         res.setHeader(key, value);
+      } catch (e) {
+        // some upstream headers are not valid to forward, skip them
       }
     });
 
@@ -91,6 +136,12 @@ export default async function handler(req, res) {
 
     if (!type.includes('text/html')) {
       const buf = Buffer.from(await upstream.arrayBuffer());
+      if (buf.length > 4 * 1024 * 1024) {
+        res.setHeader('content-type', 'text/html; charset=utf-8');
+        res.status(200).send(errorPage('too big to pass through',
+          'the file is over 4 mb, which is more than the function may return.', parsed.href));
+        return;
+      }
       res.status(upstream.status).send(buf);
       return;
     }
@@ -115,7 +166,14 @@ export default async function handler(req, res) {
 
     res.status(upstream.status).send(html);
   } catch (err) {
-    res.status(502).json({ error: String(err && err.message ? err.message : err) });
+    clearTimeout(timer);
+    const aborted = err && err.name === 'AbortError';
+    res.setHeader('content-type', 'text/html; charset=utf-8');
+    res.status(200).send(errorPage(
+      aborted ? 'the site took too long' : 'could not reach the site',
+      aborted
+        ? 'it did not answer within eight seconds.'
+        : String(err && err.message ? err.message : err),
+      parsed.href));
   }
 }
-
