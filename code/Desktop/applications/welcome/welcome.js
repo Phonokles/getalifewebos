@@ -23,6 +23,7 @@ const APPS = [
   ['code', 'openCode', png('code')],
   ['paint', 'openPaint', png('paint')],
   ['viewer', 'openViewer', png('viewer')],
+  ['browser', 'openBrowser', png('browser')],
   ['monitor', 'openMonitor', png('monitor')],
   ['calc', 'openCalculator', png('calculator')],
   ['snake', 'openSnake', png('snake')],

@@ -682,6 +682,9 @@ function openSnake() {
 function openWelcome() {
   return openWindow('win-welcome', 'WELCOME', 'applications/welcome/welcome.html', 540, 430, { singleton: true });
 }
+function openBrowser() {
+  return openWindow('win-browser', 'BROWSER', 'applications/browser/browser.html', 860, 600);
+}
 function openMonitor() {
   return openWindow('win-monitor', 'MONITOR', 'applications/monitor/monitor.html', 560, 470);
 }
@@ -738,4 +741,3 @@ if (document.readyState === 'loading') {
 } else {
   autostartWelcome();
 }
-

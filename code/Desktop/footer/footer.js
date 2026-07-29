@@ -19,6 +19,7 @@
     'win-code': { label: 'code', open: 'openCode', icon: png('code') },
     'win-paint': { label: 'paint', open: 'openPaint', icon: png('paint') },
     'win-viewer': { label: 'viewer', open: 'openViewer', icon: png('viewer') },
+    'win-browser': { label: 'browser', open: 'openBrowser', icon: png('browser') },
     'win-monitor': { label: 'monitor', open: 'openMonitor', icon: png('monitor') },
     'win-calculator': { label: 'calculator', open: 'openCalculator', icon: png('calculator') },
     'win-todo': { label: 'todo', open: 'openTodo', icon: png('todo') },

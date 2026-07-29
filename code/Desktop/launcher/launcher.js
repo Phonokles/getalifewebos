@@ -6,6 +6,7 @@
     { name: 'code', keys: 'editor text write', run: () => openCode() },
     { name: 'paint', keys: 'draw canvas art brush', run: () => openPaint() },
     { name: 'viewer', keys: 'image picture photo png', run: () => openViewer() },
+    { name: 'browser', keys: 'web internet surf tabs', run: () => openBrowser() },
     { name: 'monitor', keys: 'btop system stats cpu', run: () => openMonitor() },
     { name: 'calculator', keys: 'calc math numbers', run: () => openCalculator() },
     { name: 'todo', keys: 'tasks list', run: () => openTodo() },
