@@ -17,6 +17,7 @@ let proxyReady = null;
 let proxyCheckedAt = 0;
 
 function checkProxy() {
+  if (typeof fetch !== 'function') return Promise.resolve(false);
   if (proxyReady === true) return Promise.resolve(true);
   if (proxyReady === false && Date.now() - proxyCheckedAt < 15000) {
     return Promise.resolve(false);
@@ -36,6 +37,17 @@ function checkProxy() {
     });
 }
 const EXTERNAL_SEARCH = 'https://duckduckgo.com/?q=';
+
+// the no-js version of duckduckgo is plain server rendered html, which is
+// exactly what survives going through the proxy
+const ENGINES = {
+  ddg: { label: 'duckduckgo', url: q => 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q) },
+  bing: { label: 'bing', url: q => 'https://www.bing.com/search?q=' + encodeURIComponent(q) },
+  wiki: { label: 'wikipedia', url: q => RESULTS + encodeURIComponent(q) },
+};
+
+let engine = localStorage.getItem('browserEngine');
+if (!ENGINES[engine]) engine = 'ddg';
 
 // public invidious mirrors expose a cors friendly search api. they come and go,
 // so several are tried in order
@@ -92,7 +104,7 @@ function toUrl(input) {
   if (/^[a-z]+:\/\//i.test(raw)) return raw;
   if (/^yt\s+/i.test(raw)) return VIDEOS + encodeURIComponent(raw.replace(/^yt\s+/i, ''));
   if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(raw)) return 'https://' + raw;
-  return RESULTS + encodeURIComponent(raw);
+  return ENGINES[engine].url(raw);
 }
 
 // youtube blocks /watch but the embed player is made for framing
@@ -229,25 +241,32 @@ function render(tab, url) {
     return;
   }
 
-  if (isBlocked(url)) {
-    const holder = document.createElement('div');
-    holder.className = 'br-holder';
-    holder.innerHTML = '<div class="br-results-note">opening through the proxy...</div>';
-    tab.view.appendChild(holder);
+  // everything goes through the proxy, otherwise any site that refuses framing
+  // would silently show nothing
+  const holder = document.createElement('div');
+  holder.className = 'br-holder';
+  holder.innerHTML = '<div class="br-results-note">loading...</div>';
+  tab.view.appendChild(holder);
 
-    checkProxy().then(ok => {
-      holder.innerHTML = '';
-      holder.appendChild(ok ? proxyFrame(url) : buildBlocked(url));
-    });
-    return;
-  }
+  checkProxy().then(ok => {
+    holder.innerHTML = '';
 
-  const frame = document.createElement('iframe');
-  // no allow-top-navigation, so a framed page cannot hijack the whole os
-  frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin allow-modals');
-  frame.setAttribute('referrerpolicy', 'no-referrer');
-  frame.src = url;
-  tab.view.appendChild(frame);
+    if (ok) {
+      holder.appendChild(proxyFrame(url));
+      return;
+    }
+
+    if (isBlocked(url)) {
+      holder.appendChild(buildBlocked(url));
+      return;
+    }
+
+    const frame = document.createElement('iframe');
+    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin allow-modals');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.setAttribute('src', url);
+    holder.appendChild(frame);
+  });
 }
 
 function buildHome() {
@@ -608,6 +627,21 @@ function paint() {
   document.getElementById('forward').disabled = tab.index >= tab.history.length - 1;
   document.getElementById('external').disabled = url === HOME;
 }
+
+const engineBtn = document.getElementById('engine');
+
+function paintEngine() {
+  engineBtn.textContent = ENGINES[engine].label;
+}
+
+engineBtn.addEventListener('click', () => {
+  const keys = Object.keys(ENGINES);
+  engine = keys[(keys.indexOf(engine) + 1) % keys.length];
+  localStorage.setItem('browserEngine', engine);
+  paintEngine();
+});
+
+paintEngine();
 
 document.getElementById('new-tab').addEventListener('click', () => newTab(HOME));
 

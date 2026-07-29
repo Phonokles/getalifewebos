@@ -531,3 +531,23 @@ html, body {
   display: block;
 }
 
+.br-engine {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: none;
+  border: 1px solid rgba(var(--fg-rgb), 0.13);
+  border-radius: 5px;
+  color: rgba(var(--fg-rgb), 0.5);
+  font-family: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.br-engine:hover {
+  background: rgba(var(--fg-rgb), 0.07);
+  border-color: rgba(var(--fg-rgb), 0.3);
+  color: rgb(var(--fg-rgb));
+}
