@@ -42,86 +42,146 @@ async function grab(url, extra = {}) {
   try {
     const res = await fetch(url, { headers: { ...HEADERS, ...extra }, signal: stop.signal });
     clearTimeout(timer);
-    if (!res.ok) return null;
-    return res;
+    if (!res.ok) return { error: 'http ' + res.status };
+    return { res };
   } catch (e) {
     clearTimeout(timer);
-    return null;
+    return { error: e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e) };
   }
 }
 
-// mojeek runs its own index and does not fight off servers the way the big
-// engines do, so it is the first choice
+
+// mojeek has its own index and is far less hostile to servers than the big ones
 async function mojeek(query) {
-  const res = await grab('https://www.mojeek.com/search?q=' + encodeURIComponent(query));
-  if (!res) return [];
+  const got = await grab('https://www.mojeek.com/search?q=' + encodeURIComponent(query));
+  if (got.error) return { error: got.error, items: [] };
 
-  const html = await res.text();
-  const out = [];
-  const blocks = html.split(/<li[^>]*>/i).slice(1);
+  const html = await got.res.text();
 
-  for (const block of blocks) {
+  // only look inside the results list, otherwise the menu links become hits
+  const listStart = html.search(/<ul[^>]+class="[^"]*results[^"]*"/i);
+  const area = listStart >= 0 ? html.slice(listStart) : html;
+
+  const items = [];
+  for (const block of area.split(/<li[^>]*>/i).slice(1)) {
     const link = block.match(/<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
     if (!link) continue;
+    if (/mojeek\.com/i.test(link[1])) continue;
 
     const title = strip(link[2]);
-    if (!title || title.length < 2) continue;
+    if (title.length < 3) continue;
 
     const desc = block.match(/<p[^>]*class="[^"]*s[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
-    out.push({ title, url: link[1], text: desc ? strip(desc[1]).slice(0, 240) : '' });
-
-    if (out.length >= 12) break;
+    items.push({ title, url: link[1], text: desc ? strip(desc[1]).slice(0, 240) : '' });
+    if (items.length >= 12) break;
   }
-  return out;
+
+  return { items, error: items.length ? null : 'no results parsed' };
 }
 
-// public searxng mirrors, some of them answer with json
-async function searx(query) {
-  const hosts = ['https://searx.be', 'https://search.bus-hit.me', 'https://priv.au'];
+// searxng mirrors, tried as json first and then as plain html
+async function searxng(query) {
+  const hosts = [
+    'https://searx.be', 'https://priv.au', 'https://search.inetol.net',
+    'https://searxng.site', 'https://opnxng.com',
+  ];
+  const notes = [];
 
   for (const host of hosts) {
-    const res = await grab(`${host}/search?format=json&q=` + encodeURIComponent(query));
-    if (!res) continue;
-
-    try {
-      const data = await res.json();
-      const items = (data.results || []).slice(0, 12).map(r => ({
-        title: r.title || r.url,
-        url: r.url,
-        text: (r.content || '').slice(0, 240),
-      }));
-      if (items.length) return items;
-    } catch (e) {
-      // not json, try the next mirror
+    const json = await grab(`${host}/search?format=json&q=` + encodeURIComponent(query));
+    if (json.res) {
+      try {
+        const data = await json.res.json();
+        const items = (data.results || []).slice(0, 12).map(r => ({
+          title: r.title || r.url,
+          url: r.url,
+          text: (r.content || '').slice(0, 240),
+        }));
+        if (items.length) return { items, host };
+      } catch (e) {
+        notes.push(host + ': not json');
+      }
+    } else {
+      notes.push(host + ': ' + json.error);
     }
+
+    const page = await grab(`${host}/search?q=` + encodeURIComponent(query));
+    if (!page.res) continue;
+
+    const html = await page.res.text();
+    const items = [];
+    for (const block of html.split(/<article[^>]*>/i).slice(1)) {
+      const link = block.match(/<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!link) continue;
+      const title = strip(link[2]);
+      if (title.length < 3) continue;
+      const desc = block.match(/<p[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
+      items.push({ title, url: link[1], text: desc ? strip(desc[1]).slice(0, 240) : '' });
+      if (items.length >= 12) break;
+    }
+    if (items.length) return { items, host };
   }
-  return [];
+
+  return { items: [], error: notes.slice(0, 3).join(' | ') || 'no mirror answered' };
 }
 
-// last resort: always answers, but only knows encyclopedia articles
+// official api, answers servers without a captcha, but only knows topics it has
+// a direct answer for
+async function ddgAnswers(query) {
+  const got = await grab('https://api.duckduckgo.com/?no_html=1&no_redirect=1&format=json&q='
+    + encodeURIComponent(query));
+  if (got.error) return { error: got.error, items: [] };
+
+  try {
+    const data = await got.res.json();
+    const items = [];
+
+    if (data.AbstractURL && data.AbstractText) {
+      items.push({ title: data.Heading || query, url: data.AbstractURL, text: data.AbstractText.slice(0, 240) });
+    }
+
+    (data.RelatedTopics || []).forEach(t => {
+      const list = t.Topics || [t];
+      list.forEach(x => {
+        if (x.FirstURL && x.Text) {
+          items.push({ title: x.Text.split(' - ')[0].slice(0, 90), url: x.FirstURL, text: x.Text.slice(0, 240) });
+        }
+      });
+    });
+
+    return { items: items.slice(0, 12), error: items.length ? null : 'no answer' };
+  } catch (e) {
+    return { error: 'bad json', items: [] };
+  }
+}
+
+
+// always answers, but only knows encyclopedia articles
 async function wiki(query, lang) {
   const api = `https://${lang}.wikipedia.org/w/api.php`
     + '?action=query&generator=search&gsrlimit=10'
     + '&gsrsearch=' + encodeURIComponent(query)
     + '&prop=extracts|info&exintro=1&explaintext=1&exsentences=2&inprop=url&format=json';
 
-  const res = await grab(api);
-  if (!res) return [];
+  const got = await grab(api);
+  if (got.error) return { error: got.error, items: [] };
 
   try {
-    const data = await res.json();
+    const data = await got.res.json();
     const pages = data?.query?.pages;
-    if (!pages) return [];
+    if (!pages) return { items: [], error: 'nothing found' };
 
-    return Object.values(pages)
-      .sort((a, b) => (a.index || 0) - (b.index || 0))
-      .map(p => ({
-        title: p.title,
-        url: p.fullurl || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-        text: (p.extract || '').trim().slice(0, 240),
-      }));
+    return {
+      items: Object.values(pages)
+        .sort((a, b) => (a.index || 0) - (b.index || 0))
+        .map(p => ({
+          title: p.title,
+          url: p.fullurl || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+          text: (p.extract || '').trim().slice(0, 240),
+        })),
+    };
   } catch (e) {
-    return [];
+    return { error: 'bad json', items: [] };
   }
 }
 
@@ -130,6 +190,7 @@ export default async function handler(req, res) {
   const lang = /^de/i.test(req.query.lang || '') ? 'de' : 'en';
 
   res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('cache-control', 'public, max-age=300');
 
   if (!query) {
     res.status(400).json({ error: 'no query' });
@@ -138,21 +199,26 @@ export default async function handler(req, res) {
 
   const sources = [
     ['mojeek', () => mojeek(query)],
-    ['searx', () => searx(query)],
+    ['searxng', () => searxng(query)],
+    ['duckduckgo', () => ddgAnswers(query)],
     ['wikipedia', () => wiki(query, lang)],
   ];
 
+  const tried = [];
+
   for (const [name, run] of sources) {
     try {
-      const results = await run();
-      if (results.length) {
-        res.status(200).json({ engine: name, results });
+      const out = await run();
+      tried.push({ source: name, found: out.items.length, note: out.error || null });
+
+      if (out.items.length) {
+        res.status(200).json({ engine: name, results: out.items, tried });
         return;
       }
     } catch (e) {
-      // try the next source
+      tried.push({ source: name, found: 0, note: String(e && e.message || e) });
     }
   }
 
-  res.status(200).json({ engine: null, results: [] });
+  res.status(200).json({ engine: null, results: [], tried });
 }
