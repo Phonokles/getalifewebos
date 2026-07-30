@@ -110,7 +110,9 @@ const SEARX_HOSTS = [
   'https://searx.be', 'https://priv.au', 'https://search.inetol.net',
   'https://searxng.site', 'https://opnxng.com', 'https://baresearch.org',
   'https://search.projectsegfau.lt', 'https://searx.tiekoetter.com',
-  'https://search.bus-hit.me', 'https://northboot.xyz',
+  'https://search.bus-hit.me', 'https://northboot.xyz', 'https://searx.work',
+  'https://search.hbubli.cc', 'https://searxng.world', 'https://paulgo.io',
+  'https://search.rhscz.eu', 'https://searx.namejeff.xyz',
 ];
 
 async function htmlEngine(engine, query) {
@@ -125,7 +127,7 @@ async function htmlEngine(engine, query) {
 // one searxng mirror is often rate limited, so a few are asked at once and the
 // first useful answer wins
 async function searxng(query) {
-  const picks = SEARX_HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, 4);
+  const picks = SEARX_HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, 6);
   const notes = [];
 
   const runs = picks.map(async host => {
@@ -159,6 +161,37 @@ async function searxng(query) {
   return best && best.length
     ? { items: best }
     : { items: [], error: notes.slice(0, 3).join(' | ') || 'no mirror answered' };
+}
+
+// qwant runs its own index and its api answers without a key
+async function qwant(query, lang) {
+  const url = 'https://api.qwant.com/v3/search/web?count=10&offset=0&device=desktop&safesearch=1'
+    + '&locale=' + (lang === 'de' ? 'de_DE' : 'en_GB')
+    + '&q=' + encodeURIComponent(query);
+
+  const got = await grab(url, { origin: 'https://www.qwant.com', referer: 'https://www.qwant.com/' });
+  if (got.error) return { error: got.error, items: [] };
+
+  const body = await got.res.text();
+  if (!body.trim().startsWith('{')) return { error: 'not json', items: [] };
+
+  try {
+    const data = JSON.parse(body);
+    const groups = data?.data?.result?.items?.mainline || [];
+    const items = [];
+
+    groups.forEach(g => {
+      (g.items || []).forEach(it => {
+        if (it.url && it.title) {
+          items.push({ title: strip(it.title), url: it.url, text: strip(it.desc || '').slice(0, 240) });
+        }
+      });
+    });
+
+    return { items: items.slice(0, 15), error: items.length ? null : 'no results' };
+  } catch (e) {
+    return { error: 'bad json', items: [] };
+  }
 }
 
 // official endpoint, answers servers, but only knows topics it has an entry for
@@ -209,12 +242,48 @@ function keyOf(url) {
 
 // reciprocal rank fusion: a page ranked well by several engines wins over one
 // that a single engine put on top
+function hostOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    return '';
+  }
+}
+
+// one engine with a strong bias should not fill the whole page, so each source
+// contributes at most this many and each domain appears at most twice
+const PER_SOURCE = 10;
+const PER_DOMAIN = 2;
+
+function spread(results) {
+  const count = new Map();
+  const kept = [];
+  const spare = [];
+
+  results.forEach(r => {
+    const host = hostOf(r.url);
+    const n = count.get(host) || 0;
+
+    if (n < PER_DOMAIN) {
+      count.set(host, n + 1);
+      kept.push(r);
+    } else {
+      spare.push(r);
+    }
+  });
+
+  // nothing is thrown away, the extras just move behind the mixed ones
+  return kept.concat(spare);
+}
+
 function merge(lists) {
   const K = 10;
   const seen = new Map();
 
   lists.forEach(({ source, items }) => {
-    items.forEach((item, rank) => {
+    // mix inside the source first, otherwise the cap would cut away everything
+    // that is not the one domain this engine happens to favour
+    spread(items).slice(0, PER_SOURCE).forEach((item, rank) => {
       const key = keyOf(item.url);
       const score = 1 / (K + rank);
       const hit = seen.get(key);
@@ -237,11 +306,12 @@ function merge(lists) {
     });
   });
 
-  return [...seen.values()].sort((a, b) => b.score - a.score);
+  return spread([...seen.values()].sort((a, b) => b.score - a.score));
 }
 
 export default async function handler(req, res) {
   const query = (req.query.q || '').trim();
+  const lang = /^de/i.test(req.query.lang || '') ? 'de' : 'en';
 
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('cache-control', 'public, max-age=300');
@@ -254,6 +324,7 @@ export default async function handler(req, res) {
   const jobs = [
     ...ENGINES.map(e => [e.name, () => htmlEngine(e, query)]),
     ['searxng', () => searxng(query)],
+    ['qwant', () => qwant(query, lang)],
     ['duckduckgo', () => ddgAnswers(query)],
   ];
 
