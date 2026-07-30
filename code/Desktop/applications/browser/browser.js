@@ -339,6 +339,12 @@ function buildResults(rawQuery) {
   fetchResults(query, onlyWiki)
     .then(data => {
       if (data.engine) head.textContent = `results for "${query}"  \u00b7  ${data.engine}`;
+      if (data.note) {
+        const why = document.createElement('div');
+        why.className = 'br-results-why';
+        why.textContent = 'web search skipped: ' + data.note;
+        box.insertBefore(why, list);
+      }
       renderResults(list, data.items, query);
     })
     .catch(() => {
@@ -353,18 +359,27 @@ function buildResults(rawQuery) {
 }
 
 async function fetchResults(query, onlyWiki) {
+  let note = null;
+
   // the server endpoint does a real web search when it is available
   if (!onlyWiki && typeof fetch === 'function') {
     try {
       const res = await fetch(SEARCH_API + encodeURIComponent(query) + '&lang=' + WIKI_LANG);
-      if (res.ok) {
+
+      if (!res.ok) {
+        note = res.status === 404
+          ? 'api/search.js is not deployed'
+          : 'the search endpoint answered ' + res.status;
+      } else {
         const data = await res.json();
         if (data.results && data.results.length) {
           return { engine: data.engine, items: data.results };
         }
+        note = 'no source had an answer'
+          + (data.tried ? ': ' + data.tried.map(t => t.source + ' ' + (t.note || t.found)).join(', ') : '');
       }
     } catch (e) {
-      // fall through to wikipedia
+      note = 'could not reach the search endpoint';
     }
   }
 
@@ -379,10 +394,11 @@ async function fetchResults(query, onlyWiki) {
 
   const data = await res.json();
   const pages = data?.query?.pages;
-  if (!pages) return { engine: 'wikipedia', items: [] };
+  if (!pages) return { engine: 'wikipedia', items: [], note };
 
   return {
     engine: 'wikipedia',
+    note,
     items: Object.values(pages)
       .sort((a, b) => (a.index || 0) - (b.index || 0))
       .map(p => ({
