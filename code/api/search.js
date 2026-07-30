@@ -51,111 +51,150 @@ async function grab(url, extra = {}) {
 }
 
 
-// mojeek has its own index and is far less hostile to servers than the big ones
-async function mojeek(query) {
-  const got = await grab('https://www.mojeek.com/search?q=' + encodeURIComponent(query));
+// engines change their markup all the time, so instead of matching their exact
+// classes this pulls out every outgoing link with a sensible title
+function extractLinks(html, ownHosts) {
+  const clean = String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+
+  const skip = /\/(privacy|about|contact|settings|preferences|login|signup|impressum|datenschutz)/i;
+  const out = [];
+  const seen = new Set();
+
+  const re = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]{0,400}?)<\/a>/gi;
+  let m;
+
+  while ((m = re.exec(clean)) !== null) {
+    const url = m[1];
+    const title = strip(m[2]);
+
+    if (title.length < 8 || title.length > 130) continue;
+    if (skip.test(url)) continue;
+
+    let host;
+    try {
+      host = new URL(url).hostname.replace(/^www\./, '');
+    } catch (e) {
+      continue;
+    }
+    if (ownHosts.some(h => host.endsWith(h))) continue;
+
+    const key = keyOf(url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    // whatever text follows the link, up to the next link, is usually the snippet
+    const after = clean.slice(m.index + m[0].length, m.index + m[0].length + 600);
+    const cut = after.search(/<a[^>]+href="https?:/i);
+    const text = strip(cut > 0 ? after.slice(0, cut) : after).slice(0, 240);
+
+    out.push({ title, url, text });
+    if (out.length >= 15) break;
+  }
+
+  return out;
+}
+
+// several small engines that tolerate requests from a server. the big ones all
+// answer a datacenter with a captcha, so they are not worth trying
+const ENGINES = [
+  { name: 'mojeek',     url: q => 'https://www.mojeek.com/search?q=' + encodeURIComponent(q),        hosts: ['mojeek.com'] },
+  { name: 'marginalia', url: q => 'https://search.marginalia.nu/search?query=' + encodeURIComponent(q), hosts: ['marginalia.nu'] },
+  { name: 'stract',     url: q => 'https://stract.com/search?q=' + encodeURIComponent(q),            hosts: ['stract.com'] },
+  { name: 'wiby',       url: q => 'https://wiby.me/?q=' + encodeURIComponent(q),                     hosts: ['wiby.me'] },
+  { name: 'rightdao',   url: q => 'https://rightdao.com/search?query=' + encodeURIComponent(q),      hosts: ['rightdao.com'] },
+];
+
+const SEARX_HOSTS = [
+  'https://searx.be', 'https://priv.au', 'https://search.inetol.net',
+  'https://searxng.site', 'https://opnxng.com', 'https://baresearch.org',
+  'https://search.projectsegfau.lt', 'https://searx.tiekoetter.com',
+  'https://search.bus-hit.me', 'https://northboot.xyz',
+];
+
+async function htmlEngine(engine, query) {
+  const got = await grab(engine.url(query));
   if (got.error) return { error: got.error, items: [] };
 
   const html = await got.res.text();
-
-  // only look inside the results list, otherwise the menu links become hits
-  const listStart = html.search(/<ul[^>]+class="[^"]*results[^"]*"/i);
-  const area = listStart >= 0 ? html.slice(listStart) : html;
-
-  const items = [];
-  for (const block of area.split(/<li[^>]*>/i).slice(1)) {
-    const link = block.match(/<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-    if (!link) continue;
-    if (/mojeek\.com/i.test(link[1])) continue;
-
-    const title = strip(link[2]);
-    if (title.length < 3) continue;
-
-    const desc = block.match(/<p[^>]*class="[^"]*s[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
-    items.push({ title, url: link[1], text: desc ? strip(desc[1]).slice(0, 240) : '' });
-    if (items.length >= 12) break;
-  }
-
-  return { items, error: items.length ? null : 'no results parsed' };
+  const items = extractLinks(html, engine.hosts);
+  return { items, error: items.length ? null : 'nothing parsed' };
 }
 
-// searxng mirrors, tried as json first and then as plain html
+// one searxng mirror is often rate limited, so a few are asked at once and the
+// first useful answer wins
 async function searxng(query) {
-  const hosts = [
-    'https://searx.be', 'https://priv.au', 'https://search.inetol.net',
-    'https://searxng.site', 'https://opnxng.com',
-  ];
+  const picks = SEARX_HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, 4);
   const notes = [];
 
-  for (const host of hosts) {
+  const runs = picks.map(async host => {
     const json = await grab(`${host}/search?format=json&q=` + encodeURIComponent(query));
     if (json.res) {
       try {
         const data = await json.res.json();
-        const items = (data.results || []).slice(0, 12).map(r => ({
+        const items = (data.results || []).slice(0, 15).map(r => ({
           title: r.title || r.url,
           url: r.url,
           text: (r.content || '').slice(0, 240),
         }));
-        if (items.length) return { items, host };
+        if (items.length) return items;
       } catch (e) {
-        notes.push(host + ': not json');
+        notes.push(host.replace('https://', '') + ': no json');
       }
     } else {
-      notes.push(host + ': ' + json.error);
+      notes.push(host.replace('https://', '') + ': ' + json.error);
     }
 
     const page = await grab(`${host}/search?q=` + encodeURIComponent(query));
-    if (!page.res) continue;
+    if (!page.res) return [];
 
-    const html = await page.res.text();
-    const items = [];
-    for (const block of html.split(/<article[^>]*>/i).slice(1)) {
-      const link = block.match(/<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-      if (!link) continue;
-      const title = strip(link[2]);
-      if (title.length < 3) continue;
-      const desc = block.match(/<p[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
-      items.push({ title, url: link[1], text: desc ? strip(desc[1]).slice(0, 240) : '' });
-      if (items.length >= 12) break;
-    }
-    if (items.length) return { items, host };
-  }
+    const items = extractLinks(await page.res.text(), [new URL(host).hostname]);
+    return items;
+  });
 
-  return { items: [], error: notes.slice(0, 3).join(' | ') || 'no mirror answered' };
+  const settled = await Promise.all(runs.map(p => p.catch(() => [])));
+  const best = settled.filter(x => x.length).sort((a, b) => b.length - a.length)[0];
+
+  return best && best.length
+    ? { items: best }
+    : { items: [], error: notes.slice(0, 3).join(' | ') || 'no mirror answered' };
 }
 
-// official api, answers servers without a captcha, but only knows topics it has
-// a direct answer for
+// official endpoint, answers servers, but only knows topics it has an entry for
 async function ddgAnswers(query) {
-  const got = await grab('https://api.duckduckgo.com/?no_html=1&no_redirect=1&format=json&q='
+  const got = await grab('https://api.duckduckgo.com/?no_html=1&no_redirect=1&skip_disambig=1&format=json&q='
     + encodeURIComponent(query));
   if (got.error) return { error: got.error, items: [] };
 
+  const body = await got.res.text();
+  if (!body.trim().startsWith('{')) return { error: 'not json', items: [] };
+
   try {
-    const data = await got.res.json();
+    const data = JSON.parse(body);
     const items = [];
 
     if (data.AbstractURL && data.AbstractText) {
       items.push({ title: data.Heading || query, url: data.AbstractURL, text: data.AbstractText.slice(0, 240) });
     }
 
+    (data.Results || []).forEach(r => {
+      if (r.FirstURL) items.push({ title: strip(r.Text || r.FirstURL).slice(0, 110), url: r.FirstURL, text: '' });
+    });
+
     (data.RelatedTopics || []).forEach(t => {
-      const list = t.Topics || [t];
-      list.forEach(x => {
+      (t.Topics || [t]).forEach(x => {
         if (x.FirstURL && x.Text) {
-          items.push({ title: x.Text.split(' - ')[0].slice(0, 90), url: x.FirstURL, text: x.Text.slice(0, 240) });
+          items.push({ title: x.Text.split(' - ')[0].slice(0, 110), url: x.FirstURL, text: x.Text.slice(0, 240) });
         }
       });
     });
 
-    return { items: items.slice(0, 12), error: items.length ? null : 'no answer' };
+    return { items: items.slice(0, 15), error: items.length ? null : 'no answer' };
   } catch (e) {
     return { error: 'bad json', items: [] };
   }
 }
-
-
 
 // same page from two sources should count once, so compare without the noise
 function keyOf(url) {
@@ -212,14 +251,13 @@ export default async function handler(req, res) {
     return;
   }
 
-  const sources = [
-    ['mojeek', () => mojeek(query)],
+  const jobs = [
+    ...ENGINES.map(e => [e.name, () => htmlEngine(e, query)]),
     ['searxng', () => searxng(query)],
     ['duckduckgo', () => ddgAnswers(query)],
   ];
 
-  // all at once, so one slow engine does not hold up the rest
-  const settled = await Promise.all(sources.map(async ([name, run]) => {
+  const settled = await Promise.all(jobs.map(async ([name, run]) => {
     try {
       const out = await run();
       return { source: name, items: out.items || [], note: out.error || null };
@@ -228,12 +266,11 @@ export default async function handler(req, res) {
     }
   }));
 
-  const results = merge(settled.filter(s => s.items.length));
-  const tried = settled.map(s => ({ source: s.source, found: s.items.length, note: s.note }));
+  const working = settled.filter(s => s.items.length);
 
   res.status(200).json({
-    engine: settled.filter(s => s.items.length).map(s => s.source).join(' + ') || null,
-    results: results.slice(0, 20),
-    tried,
+    engine: working.map(s => s.source).join(' + ') || null,
+    results: merge(working).slice(0, 25),
+    tried: settled.map(s => ({ source: s.source, found: s.items.length, note: s.note })),
   });
 }
