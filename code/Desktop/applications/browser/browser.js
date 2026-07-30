@@ -38,16 +38,17 @@ function checkProxy() {
 }
 const EXTERNAL_SEARCH = 'https://duckduckgo.com/?q=';
 
-// the no-js version of duckduckgo is plain server rendered html, which is
-// exactly what survives going through the proxy
+const SEARCH_API = '/api/search?q=';
+
+// search pages themselves show a captcha to a datacenter, so the server does
+// the searching and only hands back the results
 const ENGINES = {
-  ddg: { label: 'duckduckgo', url: q => 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q) },
-  bing: { label: 'bing', url: q => 'https://www.bing.com/search?q=' + encodeURIComponent(q) },
-  wiki: { label: 'wikipedia', url: q => RESULTS + encodeURIComponent(q) },
+  web: { label: 'web', url: q => RESULTS + encodeURIComponent(q) },
+  wiki: { label: 'wikipedia', url: q => RESULTS + encodeURIComponent(q) + '&only=wiki' },
 };
 
 let engine = localStorage.getItem('browserEngine');
-if (!ENGINES[engine]) engine = 'ddg';
+if (!ENGINES[engine]) engine = 'web';
 
 // public invidious mirrors expose a cors friendly search api. they come and go,
 // so several are tried in order
@@ -310,7 +311,10 @@ function buildHome() {
   return home;
 }
 
-function buildResults(query) {
+function buildResults(rawQuery) {
+  const onlyWiki = rawQuery.endsWith('&only=wiki');
+  const query = onlyWiki ? rawQuery.slice(0, -10) : rawQuery;
+
   const box = document.createElement('div');
   box.className = 'br-results';
 
@@ -332,8 +336,11 @@ function buildResults(query) {
   box.appendChild(list);
   box.appendChild(foot);
 
-  fetchResults(query)
-    .then(items => renderResults(list, items, query))
+  fetchResults(query, onlyWiki)
+    .then(data => {
+      if (data.engine) head.textContent = `results for "${query}"  \u00b7  ${data.engine}`;
+      renderResults(list, data.items, query);
+    })
     .catch(() => {
       list.innerHTML = '';
       const note = document.createElement('div');
@@ -345,7 +352,22 @@ function buildResults(query) {
   return box;
 }
 
-async function fetchResults(query) {
+async function fetchResults(query, onlyWiki) {
+  // the server endpoint does a real web search when it is available
+  if (!onlyWiki && typeof fetch === 'function') {
+    try {
+      const res = await fetch(SEARCH_API + encodeURIComponent(query) + '&lang=' + WIKI_LANG);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results && data.results.length) {
+          return { engine: data.engine, items: data.results };
+        }
+      }
+    } catch (e) {
+      // fall through to wikipedia
+    }
+  }
+
   const api = `https://${WIKI_LANG}.wikipedia.org/w/api.php`
     + '?action=query&generator=search&gsrlimit=8'
     + '&gsrsearch=' + encodeURIComponent(query)
@@ -357,15 +379,18 @@ async function fetchResults(query) {
 
   const data = await res.json();
   const pages = data?.query?.pages;
-  if (!pages) return [];
+  if (!pages) return { engine: 'wikipedia', items: [] };
 
-  return Object.values(pages)
-    .sort((a, b) => (a.index || 0) - (b.index || 0))
-    .map(p => ({
-      title: p.title,
-      url: p.fullurl || `https://${WIKI_LANG}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-      text: (p.extract || '').trim(),
-    }));
+  return {
+    engine: 'wikipedia',
+    items: Object.values(pages)
+      .sort((a, b) => (a.index || 0) - (b.index || 0))
+      .map(p => ({
+        title: p.title,
+        url: p.fullurl || `https://${WIKI_LANG}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+        text: (p.extract || '').trim(),
+      })),
+  };
 }
 
 function renderResults(list, items, query) {
