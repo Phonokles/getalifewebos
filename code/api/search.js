@@ -156,38 +156,53 @@ async function ddgAnswers(query) {
 }
 
 
-// always answers, but only knows encyclopedia articles
-async function wiki(query, lang) {
-  const api = `https://${lang}.wikipedia.org/w/api.php`
-    + '?action=query&generator=search&gsrlimit=10'
-    + '&gsrsearch=' + encodeURIComponent(query)
-    + '&prop=extracts|info&exintro=1&explaintext=1&exsentences=2&inprop=url&format=json';
 
-  const got = await grab(api);
-  if (got.error) return { error: got.error, items: [] };
-
+// same page from two sources should count once, so compare without the noise
+function keyOf(url) {
   try {
-    const data = await got.res.json();
-    const pages = data?.query?.pages;
-    if (!pages) return { items: [], error: 'nothing found' };
-
-    return {
-      items: Object.values(pages)
-        .sort((a, b) => (a.index || 0) - (b.index || 0))
-        .map(p => ({
-          title: p.title,
-          url: p.fullurl || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-          text: (p.extract || '').trim().slice(0, 240),
-        })),
-    };
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/+$/, '');
+    return u.hostname.replace(/^www\./, '') + path;
   } catch (e) {
-    return { error: 'bad json', items: [] };
+    return url;
   }
+}
+
+// reciprocal rank fusion: a page ranked well by several engines wins over one
+// that a single engine put on top
+function merge(lists) {
+  const K = 10;
+  const seen = new Map();
+
+  lists.forEach(({ source, items }) => {
+    items.forEach((item, rank) => {
+      const key = keyOf(item.url);
+      const score = 1 / (K + rank);
+      const hit = seen.get(key);
+
+      if (!hit) {
+        seen.set(key, {
+          title: item.title,
+          url: item.url,
+          text: item.text || '',
+          sources: [source],
+          score,
+        });
+        return;
+      }
+
+      hit.score += score;
+      if (!hit.sources.includes(source)) hit.sources.push(source);
+      if ((item.text || '').length > hit.text.length) hit.text = item.text;
+      if (item.title.length > hit.title.length && item.title.length < 110) hit.title = item.title;
+    });
+  });
+
+  return [...seen.values()].sort((a, b) => b.score - a.score);
 }
 
 export default async function handler(req, res) {
   const query = (req.query.q || '').trim();
-  const lang = /^de/i.test(req.query.lang || '') ? 'de' : 'en';
 
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('cache-control', 'public, max-age=300');
@@ -201,24 +216,24 @@ export default async function handler(req, res) {
     ['mojeek', () => mojeek(query)],
     ['searxng', () => searxng(query)],
     ['duckduckgo', () => ddgAnswers(query)],
-    ['wikipedia', () => wiki(query, lang)],
   ];
 
-  const tried = [];
-
-  for (const [name, run] of sources) {
+  // all at once, so one slow engine does not hold up the rest
+  const settled = await Promise.all(sources.map(async ([name, run]) => {
     try {
       const out = await run();
-      tried.push({ source: name, found: out.items.length, note: out.error || null });
-
-      if (out.items.length) {
-        res.status(200).json({ engine: name, results: out.items, tried });
-        return;
-      }
+      return { source: name, items: out.items || [], note: out.error || null };
     } catch (e) {
-      tried.push({ source: name, found: 0, note: String(e && e.message || e) });
+      return { source: name, items: [], note: String(e && e.message || e) };
     }
-  }
+  }));
 
-  res.status(200).json({ engine: null, results: [], tried });
+  const results = merge(settled.filter(s => s.items.length));
+  const tried = settled.map(s => ({ source: s.source, found: s.items.length, note: s.note }));
+
+  res.status(200).json({
+    engine: settled.filter(s => s.items.length).map(s => s.source).join(' + ') || null,
+    results: results.slice(0, 20),
+    tried,
+  });
 }
