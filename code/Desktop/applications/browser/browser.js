@@ -39,6 +39,12 @@ function checkProxy() {
 const EXTERNAL_SEARCH = 'https://duckduckgo.com/?q=';
 
 const SEARCH_API = '/api/search?q=';
+const WIKI_LANG = (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
+
+// web is the real search, wikipedia is a separate mode you can pick
+const MODES = ['web', 'wikipedia'];
+let mode = localStorage.getItem('browserMode');
+if (!MODES.includes(mode)) mode = 'web';
 
 
 // public invidious mirrors expose a cors friendly search api. they come and go,
@@ -93,7 +99,7 @@ function toUrl(input) {
   if (/^[a-z]+:\/\//i.test(raw)) return raw;
   if (/^yt\s+/i.test(raw)) return VIDEOS + encodeURIComponent(raw.replace(/^yt\s+/i, ''));
   if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(raw)) return 'https://' + raw;
-  return RESULTS + encodeURIComponent(raw);
+  return RESULTS + encodeURIComponent(raw) + (mode === 'wikipedia' ? '&wiki=1' : '');
 }
 
 // youtube blocks /watch but the embed player is made for framing
@@ -293,7 +299,36 @@ function buildHome() {
   return home;
 }
 
-function buildResults(query) {
+async function fetchWiki(query) {
+  const api = `https://${WIKI_LANG}.wikipedia.org/w/api.php`
+    + '?action=query&generator=search&gsrlimit=12'
+    + '&gsrsearch=' + encodeURIComponent(query)
+    + '&prop=extracts|info&exintro=1&explaintext=1&exsentences=2&inprop=url'
+    + '&format=json&origin=*';
+
+  const res = await fetch(api);
+  if (!res.ok) return { engine: null, items: [], note: 'wikipedia answered ' + res.status };
+
+  const data = await res.json();
+  const pages = data?.query?.pages;
+  if (!pages) return { engine: 'wikipedia', items: [], note: 'nothing found' };
+
+  return {
+    engine: 'wikipedia',
+    items: Object.values(pages)
+      .sort((a, b) => (a.index || 0) - (b.index || 0))
+      .map(p => ({
+        title: p.title,
+        url: p.fullurl || `https://${WIKI_LANG}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+        text: (p.extract || '').trim(),
+      })),
+  };
+}
+
+function buildResults(rawQuery) {
+  const useWiki = rawQuery.endsWith('&wiki=1');
+  const query = useWiki ? rawQuery.slice(0, -7) : rawQuery;
+
   const box = document.createElement('div');
   box.className = 'br-results';
 
@@ -315,7 +350,7 @@ function buildResults(query) {
   box.appendChild(list);
   box.appendChild(foot);
 
-  fetchResults(query)
+  fetchResults(query, useWiki)
     .then(data => {
       if (data.engine) head.textContent = `results for "${query}"  \u00b7  ${data.engine}`;
       if (data.note) {
@@ -337,10 +372,12 @@ function buildResults(query) {
   return box;
 }
 
-async function fetchResults(query) {
+async function fetchResults(query, useWiki) {
   if (typeof fetch !== 'function') {
     return { engine: null, items: [], note: 'this browser has no fetch' };
   }
+
+  if (useWiki) return fetchWiki(query);
 
   const res = await fetch(SEARCH_API + encodeURIComponent(query));
 
@@ -566,6 +603,20 @@ function paint() {
   document.getElementById('forward').disabled = tab.index >= tab.history.length - 1;
   document.getElementById('external').disabled = url === HOME;
 }
+
+const modeBtn = document.getElementById('mode');
+
+function paintMode() {
+  modeBtn.textContent = mode;
+}
+
+modeBtn.addEventListener('click', () => {
+  mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+  localStorage.setItem('browserMode', mode);
+  paintMode();
+});
+
+paintMode();
 
 document.getElementById('new-tab').addEventListener('click', () => newTab(HOME));
 
