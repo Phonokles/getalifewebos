@@ -40,15 +40,6 @@ const EXTERNAL_SEARCH = 'https://duckduckgo.com/?q=';
 
 const SEARCH_API = '/api/search?q=';
 
-// search pages themselves show a captcha to a datacenter, so the server does
-// the searching and only hands back the results
-const ENGINES = {
-  web: { label: 'web', url: q => RESULTS + encodeURIComponent(q) },
-  wiki: { label: 'wikipedia', url: q => RESULTS + encodeURIComponent(q) + '&only=wiki' },
-};
-
-let engine = localStorage.getItem('browserEngine');
-if (!ENGINES[engine]) engine = 'web';
 
 // public invidious mirrors expose a cors friendly search api. they come and go,
 // so several are tried in order
@@ -59,9 +50,6 @@ const INVIDIOUS = [
   'https://invidious.f5.si',
 ];
 
-// search engines refuse framing, so results come from an api and get drawn in
-// the app. wikipedia allows cross origin requests officially
-const WIKI_LANG = (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
 
 // these are known to refuse embedding, so we can say so straight away instead
 // of showing an empty frame
@@ -105,7 +93,7 @@ function toUrl(input) {
   if (/^[a-z]+:\/\//i.test(raw)) return raw;
   if (/^yt\s+/i.test(raw)) return VIDEOS + encodeURIComponent(raw.replace(/^yt\s+/i, ''));
   if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(raw)) return 'https://' + raw;
-  return ENGINES[engine].url(raw);
+  return RESULTS + encodeURIComponent(raw);
 }
 
 // youtube blocks /watch but the embed player is made for framing
@@ -236,12 +224,6 @@ function render(tab, url) {
     return;
   }
 
-  const wiki = url.match(/^https?:\/\/([a-z-]+)\.wikipedia\.org\/wiki\/(.+)$/i);
-  if (wiki) {
-    tab.view.appendChild(buildReader(wiki[1], decodeURIComponent(wiki[2]), url));
-    return;
-  }
-
   // everything goes through the proxy, otherwise any site that refuses framing
   // would silently show nothing
   const holder = document.createElement('div');
@@ -311,10 +293,7 @@ function buildHome() {
   return home;
 }
 
-function buildResults(rawQuery) {
-  const onlyWiki = rawQuery.endsWith('&only=wiki');
-  const query = onlyWiki ? rawQuery.slice(0, -10) : rawQuery;
-
+function buildResults(query) {
   const box = document.createElement('div');
   box.className = 'br-results';
 
@@ -336,7 +315,7 @@ function buildResults(rawQuery) {
   box.appendChild(list);
   box.appendChild(foot);
 
-  fetchResults(query, onlyWiki)
+  fetchResults(query)
     .then(data => {
       if (data.engine) head.textContent = `results for "${query}"  \u00b7  ${data.engine}`;
       if (data.note) {
@@ -358,54 +337,31 @@ function buildResults(rawQuery) {
   return box;
 }
 
-async function fetchResults(query, onlyWiki) {
-  let note = null;
-
-  // the server endpoint does a real web search when it is available
-  if (!onlyWiki && typeof fetch === 'function') {
-    try {
-      const res = await fetch(SEARCH_API + encodeURIComponent(query) + '&lang=' + WIKI_LANG);
-
-      if (!res.ok) {
-        note = res.status === 404
-          ? 'api/search.js is not deployed'
-          : 'the search endpoint answered ' + res.status;
-      } else {
-        const data = await res.json();
-        if (data.results && data.results.length) {
-          return { engine: data.engine, items: data.results };
-        }
-        note = 'no source had an answer'
-          + (data.tried ? ': ' + data.tried.map(t => t.source + ' ' + (t.note || t.found)).join(', ') : '');
-      }
-    } catch (e) {
-      note = 'could not reach the search endpoint';
-    }
+async function fetchResults(query) {
+  if (typeof fetch !== 'function') {
+    return { engine: null, items: [], note: 'this browser has no fetch' };
   }
 
-  const api = `https://${WIKI_LANG}.wikipedia.org/w/api.php`
-    + '?action=query&generator=search&gsrlimit=8'
-    + '&gsrsearch=' + encodeURIComponent(query)
-    + '&prop=extracts|info&exintro=1&explaintext=1&exsentences=2&inprop=url'
-    + '&format=json&origin=*';
+  const res = await fetch(SEARCH_API + encodeURIComponent(query));
 
-  const res = await fetch(api);
-  if (!res.ok) throw new Error('http ' + res.status);
+  if (!res.ok) {
+    return {
+      engine: null,
+      items: [],
+      note: res.status === 404
+        ? 'api/search.js is not deployed'
+        : 'the search endpoint answered ' + res.status,
+    };
+  }
 
   const data = await res.json();
-  const pages = data?.query?.pages;
-  if (!pages) return { engine: 'wikipedia', items: [], note };
 
   return {
-    engine: 'wikipedia',
-    note,
-    items: Object.values(pages)
-      .sort((a, b) => (a.index || 0) - (b.index || 0))
-      .map(p => ({
-        title: p.title,
-        url: p.fullurl || `https://${WIKI_LANG}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-        text: (p.extract || '').trim(),
-      })),
+    engine: data.engine,
+    items: data.results || [],
+    note: (data.results && data.results.length) ? null
+      : 'no source had an answer'
+        + (data.tried ? ': ' + data.tried.map(t => t.source + ' ' + (t.note || t.found)).join(', ') : ''),
   };
 }
 
@@ -439,6 +395,14 @@ function renderResults(list, items, query) {
     row.appendChild(title);
     row.appendChild(link);
     if (item.text) row.appendChild(text);
+
+    // a page several engines agree on is worth marking
+    if (item.sources && item.sources.length) {
+      const tag = document.createElement('span');
+      tag.className = 'br-result-src' + (item.sources.length > 1 ? ' agreed' : '');
+      tag.textContent = item.sources.join(' + ');
+      row.appendChild(tag);
+    }
     row.addEventListener('click', () => go(item.url));
     list.appendChild(row);
   });
@@ -555,72 +519,6 @@ function renderVideos(list, items) {
   });
 }
 
-// wikipedia blocks framing, but the api gives us the text, so the article is
-// rendered here instead of showing a dead end
-function buildReader(lang, title, url) {
-  const box = document.createElement('div');
-  box.className = 'br-reader';
-
-  const head = document.createElement('div');
-  head.className = 'br-reader-head';
-  head.textContent = title.replace(/_/g, ' ');
-
-  const body = document.createElement('div');
-  body.className = 'br-reader-body';
-  body.innerHTML = '<div class="br-results-note">loading the article...</div>';
-
-  const foot = document.createElement('button');
-  foot.className = 'br-results-more';
-  foot.textContent = 'open the real page \u2197';
-  foot.addEventListener('click', () => window.open(url, '_blank', 'noopener'));
-
-  box.appendChild(head);
-  box.appendChild(body);
-  box.appendChild(foot);
-
-  const api = `https://${lang}.wikipedia.org/w/api.php`
-    + '?action=query&prop=extracts&explaintext=1&redirects=1'
-    + '&titles=' + encodeURIComponent(title)
-    + '&format=json&origin=*';
-
-  fetch(api)
-    .then(r => r.json())
-    .then(data => {
-      const page = Object.values(data?.query?.pages || {})[0];
-      const text = (page?.extract || '').trim();
-      body.innerHTML = '';
-
-      if (!text) {
-        const note = document.createElement('div');
-        note.className = 'br-results-note';
-        note.textContent = 'no text for this article.';
-        body.appendChild(note);
-        return;
-      }
-
-      text.split(/\n{2,}/).forEach(part => {
-        const trimmed = part.trim();
-        if (!trimmed) return;
-
-        // short lines without a period are section headings in the plain text
-        const isHeading = trimmed.length < 60 && !/[.!?]$/.test(trimmed);
-        const el = document.createElement(isHeading ? 'h3' : 'p');
-        el.className = isHeading ? 'br-reader-h' : 'br-reader-p';
-        el.textContent = trimmed.replace(/^=+\s*|\s*=+$/g, '');
-        body.appendChild(el);
-      });
-    })
-    .catch(() => {
-      body.innerHTML = '';
-      const note = document.createElement('div');
-      note.className = 'br-results-note';
-      note.textContent = 'could not load the article.';
-      body.appendChild(note);
-    });
-
-  return box;
-}
-
 function buildBlocked(url) {
   const box = document.createElement('div');
   box.className = 'br-blocked';
@@ -668,21 +566,6 @@ function paint() {
   document.getElementById('forward').disabled = tab.index >= tab.history.length - 1;
   document.getElementById('external').disabled = url === HOME;
 }
-
-const engineBtn = document.getElementById('engine');
-
-function paintEngine() {
-  engineBtn.textContent = ENGINES[engine].label;
-}
-
-engineBtn.addEventListener('click', () => {
-  const keys = Object.keys(ENGINES);
-  engine = keys[(keys.indexOf(engine) + 1) % keys.length];
-  localStorage.setItem('browserEngine', engine);
-  paintEngine();
-});
-
-paintEngine();
 
 document.getElementById('new-tab').addEventListener('click', () => newTab(HOME));
 

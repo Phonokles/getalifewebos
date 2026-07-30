@@ -560,3 +560,14 @@ html, body {
   letter-spacing: 1px;
   color: rgba(230, 150, 100, 0.75);
 }
+
+.br-result-src {
+  margin-top: 3px;
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.22);
+}
+
+.br-result-src.agreed {
+  color: rgba(120, 200, 140, 0.65);
+}
