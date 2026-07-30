@@ -379,7 +379,7 @@ async function fetchResults(query, useWiki) {
 
   if (useWiki) return fetchWiki(query);
 
-  const res = await fetch(SEARCH_API + encodeURIComponent(query));
+  const res = await fetch(SEARCH_API + encodeURIComponent(query) + '&lang=' + WIKI_LANG);
 
   if (!res.ok) {
     return {
