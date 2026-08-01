@@ -2,12 +2,10 @@
 // functions have no compilers either, so the code is sent to piston, which is
 // free and needs no key
 
-// free public piston instances. they come and go, so several are tried.
-// a key is only needed if you set one, everything here works without.
+// emkc answers /runtimes but refuses /execute without a key, so it is only
+// useful once PISTON_KEY is set. wandbox is the one that works without.
 const RUNNERS = [
   'https://emkc.org/api/v2/piston',
-  'https://piston.theoparis.com/api/v2',
-  'https://piston-api.dhravya.dev/api/v2',
 ];
 
 const PISTON_KEY = process.env.PISTON_KEY || '';
@@ -64,6 +62,13 @@ async function viaWandbox(ext, code, stdin) {
 
     const d = await res.json();
 
+    // the container backend is sometimes out of capacity. that is temporary and
+    // shows up as a compiler error, so it must not be reported as one
+    const busy = /OCI runtime|Resource temporarily unavailable|crun:|cannot allocate|too many/i;
+    const both = (d.compiler_error || '') + (d.program_error || '');
+
+    if (busy.test(both)) return { retry: 'the runner is out of capacity' };
+
     return {
       result: {
         language: compiler,
@@ -86,6 +91,69 @@ async function viaWandbox(ext, code, stdin) {
   }
 }
 
+// godbolt is a third, independent service. it compiles and runs without a key
+const GODBOLT = {
+  c: { id: 'cg132', lang: 'c' },
+  cpp: { id: 'g132', lang: 'c++' },
+  cc: { id: 'g132', lang: 'c++' },
+  cxx: { id: 'g132', lang: 'c++' },
+  rs: { id: 'r1740', lang: 'rust' },
+  go: { id: 'gl1201', lang: 'go' },
+};
+
+async function viaGodbolt(ext, code, stdin, args) {
+  const conf = GODBOLT[ext];
+  if (!conf) return { error: 'godbolt has no compiler for .' + ext };
+
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), 20000);
+
+  try {
+    const res = await fetch(`https://godbolt.org/api/compiler/${conf.id}/compile`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      signal: stop.signal,
+      body: JSON.stringify({
+        source: code,
+        options: {
+          userArguments: '-O2',
+          executeParameters: { args: args || [], stdin },
+          compilerOptions: { executorRequest: true },
+          filters: { execute: true },
+        },
+        lang: conf.lang,
+      }),
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) return { error: 'http ' + res.status };
+
+    const d = await res.json();
+    const lines = (arr) => (arr || []).map(x => (x && x.text !== undefined ? x.text : x)).join('\n');
+
+    if (d.buildResult && d.buildResult.code) {
+      return {
+        result: {
+          language: conf.lang + ' (godbolt)',
+          compile: { stdout: lines(d.buildResult.stdout), stderr: lines(d.buildResult.stderr), code: d.buildResult.code },
+          run: null,
+        },
+      };
+    }
+
+    return {
+      result: {
+        language: conf.lang + ' (godbolt)',
+        compile: null,
+        run: { stdout: lines(d.stdout), stderr: lines(d.stderr), code: d.code || 0, signal: null },
+      },
+    };
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e) };
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('access-control-allow-headers', 'content-type');
@@ -100,6 +168,7 @@ export default async function handler(req, res) {
     const probes = [
       ...RUNNERS.map(h => [h, h + '/runtimes']),
       ['wandbox', 'https://wandbox.org/api/list.json'],
+      ['godbolt', 'https://godbolt.org/api/compilers/c++'],
     ];
 
     const results = await Promise.all(probes.map(async ([name, url]) => {
@@ -160,6 +229,24 @@ export default async function handler(req, res) {
 
   const notes = [];
 
+  // wandbox first: it needs no key, piston does. a busy backend usually frees
+  // up within a moment, so it gets a few tries before moving on
+  let wb = null;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    wb = await viaWandbox(ext, code, stdin);
+
+    if (wb.result) {
+      res.status(200).json(wb.result);
+      return;
+    }
+    if (!wb.retry) break;
+
+    await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+  }
+
+  notes.push('wandbox: ' + (wb.error || wb.retry));
+
   for (const host of RUNNERS) {
     const stop = new AbortController();
     const timer = setTimeout(() => stop.abort(), 20000);
@@ -204,14 +291,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // piston is out, try the independent one
-  const wb = await viaWandbox(ext, code, stdin);
-
-  if (wb.result) {
-    res.status(200).json(wb.result);
+  const gb = await viaGodbolt(ext, code, stdin, args);
+  if (gb.result) {
+    res.status(200).json(gb.result);
     return;
   }
-  notes.push('wandbox: ' + wb.error);
+  notes.push('godbolt: ' + gb.error);
 
   res.status(200).json({
     error: 'no runner answered',
