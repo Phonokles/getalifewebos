@@ -42,8 +42,54 @@ const WANDBOX = {
   swift: 'swift-5.2.5', java: 'openjdk-head', ts: 'typescript-3.9.5',
 };
 
+// wandbox renames its compilers now and then, so if the guess above is not in
+// their list any more, the real name is looked up once and cached
+const WANDBOX_LANG = {
+  py: 'Python', js: 'JavaScript', rb: 'Ruby', php: 'PHP', lua: 'Lua',
+  c: 'C', cpp: 'C++', cc: 'C++', cxx: 'C++', h: 'C', rs: 'Rust', go: 'Go',
+  cs: 'C#', swift: 'Swift', java: 'Java', ts: 'TypeScript',
+};
+
+let wandboxList = null;
+let wandboxListAt = 0;
+
+async function wandboxCompiler(ext) {
+  const guess = WANDBOX[ext];
+
+  // cached for a while, so a rename on their side is picked up eventually
+  if (!wandboxList || Date.now() - wandboxListAt > 600000) {
+    const stop = new AbortController();
+    const timer = setTimeout(() => stop.abort(), 8000);
+    try {
+      const r = await fetch('https://wandbox.org/api/list.json', { signal: stop.signal });
+      clearTimeout(timer);
+      wandboxList = r.ok ? await r.json() : [];
+      wandboxListAt = Date.now();
+    } catch (e) {
+      clearTimeout(timer);
+      wandboxList = [];
+      wandboxListAt = Date.now();
+    }
+  }
+
+  if (!wandboxList.length) return guess;
+  if (wandboxList.some(c => c.name === guess)) return guess;
+
+  const want = WANDBOX_LANG[ext];
+  if (!want) return guess;
+
+  // newest first, so head builds win over pinned old versions
+  const match = wandboxList
+    .filter(c => c.language === want)
+    .sort((a, b) => (b.name.includes('head') ? 1 : 0) - (a.name.includes('head') ? 1 : 0));
+
+  return match.length ? match[0].name : guess;
+}
+
 async function viaWandbox(ext, code, stdin) {
-  const compiler = WANDBOX[ext];
+  if (!WANDBOX_LANG[ext]) return { error: 'wandbox has no compiler for .' + ext };
+
+  const compiler = await wandboxCompiler(ext);
   if (!compiler) return { error: 'wandbox has no compiler for .' + ext };
 
   const stop = new AbortController();
@@ -154,6 +200,59 @@ async function viaGodbolt(ext, code, stdin, args) {
   }
 }
 
+// a second route for interpreted languages, since godbolt only does compiled
+// ones. piston mirrors that still allow execute without a key.
+const OPEN_PISTON = [
+  'https://piston.ryanhs.my.id/api/v2',
+  'https://piston.crashboys.com/api/v2',
+];
+
+async function viaOpenPiston(lang, ext, code, stdin, args) {
+  const notes = [];
+
+  for (const host of OPEN_PISTON) {
+    const stop = new AbortController();
+    const timer = setTimeout(() => stop.abort(), 15000);
+
+    try {
+      const r = await fetch(host + '/execute', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: stop.signal,
+        body: JSON.stringify({
+          language: lang.language,
+          version: lang.version,
+          files: [{ name: 'main.' + ext, content: code }],
+          stdin,
+          args,
+          compile_timeout: 10000,
+          run_timeout: 6000,
+        }),
+      });
+      clearTimeout(timer);
+
+      if (!r.ok) {
+        notes.push(host + ': http ' + r.status);
+        continue;
+      }
+
+      const d = await r.json();
+      return {
+        result: {
+          language: lang.language + ' ' + lang.version,
+          compile: d.compile ? { stdout: d.compile.stdout || '', stderr: d.compile.stderr || '', code: d.compile.code } : null,
+          run: d.run ? { stdout: d.run.stdout || '', stderr: d.run.stderr || '', code: d.run.code, signal: d.run.signal || null } : null,
+        },
+      };
+    } catch (e) {
+      clearTimeout(timer);
+      notes.push(host + ': ' + (e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e)));
+    }
+  }
+
+  return { error: notes.join(' | ') || 'no open mirror' };
+}
+
 export default async function handler(req, res) {
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('access-control-allow-headers', 'content-type');
@@ -169,6 +268,7 @@ export default async function handler(req, res) {
       ...RUNNERS.map(h => [h, h + '/runtimes']),
       ['wandbox', 'https://wandbox.org/api/list.json'],
       ['godbolt', 'https://godbolt.org/api/compilers/c++'],
+      ...OPEN_PISTON.map(h => [h, h + '/runtimes']),
     ];
 
     const results = await Promise.all(probes.map(async ([name, url]) => {
@@ -290,6 +390,13 @@ export default async function handler(req, res) {
       notes.push(host + ': ' + (e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e)));
     }
   }
+
+  const op = await viaOpenPiston(lang, ext, code, stdin, args);
+  if (op.result) {
+    res.status(200).json(op.result);
+    return;
+  }
+  notes.push('open piston: ' + op.error);
 
   const gb = await viaGodbolt(ext, code, stdin, args);
   if (gb.result) {
