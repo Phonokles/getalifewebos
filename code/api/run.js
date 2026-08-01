@@ -2,10 +2,15 @@
 // functions have no compilers either, so the code is sent to piston, which is
 // free and needs no key
 
+// free public piston instances. they come and go, so several are tried.
+// a key is only needed if you set one, everything here works without.
 const RUNNERS = [
   'https://emkc.org/api/v2/piston',
-  'https://piston.spicybackend.workers.dev/api/v2/piston',
+  'https://piston.theoparis.com/api/v2',
+  'https://piston-api.dhravya.dev/api/v2',
 ];
+
+const PISTON_KEY = process.env.PISTON_KEY || '';
 
 // what piston calls each language, keyed by file extension
 const LANGS = {
@@ -30,12 +35,88 @@ const LANGS = {
   zig: { language: 'zig', version: '0.10.1' },
 };
 
+// wandbox is a second, independent service. it has been open without a key for
+// years, so it is a real fallback rather than another piston clone
+const WANDBOX = {
+  c: 'gcc-head-c', cpp: 'gcc-head', cc: 'gcc-head', cxx: 'gcc-head', h: 'gcc-head-c',
+  rs: 'rust-head', go: 'go-head', py: 'cpython-head', js: 'nodejs-head',
+  rb: 'ruby-head', php: 'php-head', lua: 'lua-5.4.0', cs: 'mono-head',
+  swift: 'swift-5.2.5', java: 'openjdk-head', ts: 'typescript-3.9.5',
+};
+
+async function viaWandbox(ext, code, stdin) {
+  const compiler = WANDBOX[ext];
+  if (!compiler) return { error: 'wandbox has no compiler for .' + ext };
+
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), 20000);
+
+  try {
+    const res = await fetch('https://wandbox.org/api/compile.json', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      signal: stop.signal,
+      body: JSON.stringify({ compiler, code, stdin, save: false }),
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) return { error: 'http ' + res.status };
+
+    const d = await res.json();
+
+    return {
+      result: {
+        language: compiler,
+        compile: (d.compiler_error || d.compiler_message) ? {
+          stdout: d.compiler_output || '',
+          stderr: d.compiler_error || '',
+          code: d.status && d.status !== '0' && !d.program_message ? 1 : 0,
+        } : null,
+        run: {
+          stdout: d.program_output || '',
+          stderr: d.program_error || '',
+          code: parseInt(d.status || '0', 10) || 0,
+          signal: d.signal || null,
+        },
+      },
+    };
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e) };
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('access-control-allow-origin', '*');
   res.setHeader('access-control-allow-headers', 'content-type');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
+    return;
+  }
+
+  // /api/run?check=1 shows which services answer from here
+  if (req.query.check) {
+    const probes = [
+      ...RUNNERS.map(h => [h, h + '/runtimes']),
+      ['wandbox', 'https://wandbox.org/api/list.json'],
+    ];
+
+    const results = await Promise.all(probes.map(async ([name, url]) => {
+      const stop = new AbortController();
+      const timer = setTimeout(() => stop.abort(), 8000);
+      try {
+        const r = await fetch(url, { signal: stop.signal });
+        clearTimeout(timer);
+        return { service: name, status: r.status, ok: r.ok };
+      } catch (e) {
+        clearTimeout(timer);
+        return { service: name, status: null, ok: false,
+          note: e && e.name === 'AbortError' ? 'timeout' : String(e && e.message || e) };
+      }
+    }));
+
+    res.status(200).json({ hasKey: !!PISTON_KEY, probes: results });
     return;
   }
 
@@ -84,9 +165,12 @@ export default async function handler(req, res) {
     const timer = setTimeout(() => stop.abort(), 20000);
 
     try {
+      const headers = { 'content-type': 'application/json' };
+      if (PISTON_KEY) headers.authorization = PISTON_KEY;
+
       const upstream = await fetch(host + '/execute', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers,
         body: payload,
         signal: stop.signal,
       });
@@ -120,5 +204,18 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(200).json({ error: 'no runner answered', notes });
+  // piston is out, try the independent one
+  const wb = await viaWandbox(ext, code, stdin);
+
+  if (wb.result) {
+    res.status(200).json(wb.result);
+    return;
+  }
+  notes.push('wandbox: ' + wb.error);
+
+  res.status(200).json({
+    error: 'no runner answered',
+    notes,
+    hint: 'all free services refused. see api/run.js to add one or set PISTON_KEY.',
+  });
 }
