@@ -374,7 +374,7 @@ html, body {
 .br-result-url {
   font-size: 0.6rem;
   letter-spacing: 1px;
-  color: rgba(120, 190, 250, 0.75);
+  color: rgba(var(--fg-rgb), 0.42);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -558,7 +558,7 @@ html, body {
   border-bottom: 1px solid rgba(var(--fg-rgb), 0.06);
   font-size: 0.62rem;
   letter-spacing: 1px;
-  color: rgba(230, 150, 100, 0.75);
+  color: rgba(var(--fg-rgb), 0.45);
 }
 
 .br-result-src {
@@ -569,5 +569,15 @@ html, body {
 }
 
 .br-result-src.agreed {
-  color: rgba(120, 200, 140, 0.65);
+  color: rgba(var(--fg-rgb), 0.5);
+}
+
+.br-link.own {
+  border-color: rgba(var(--fg-rgb), 0.28);
+  color: rgba(var(--fg-rgb), 0.75);
+}
+
+.br-link.own:hover {
+  border-color: rgba(var(--fg-rgb), 0.7);
+  color: rgb(var(--fg-rgb));
 }

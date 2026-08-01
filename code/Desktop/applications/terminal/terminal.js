@@ -165,6 +165,10 @@ const COMMANDS = {
     printLine('  head/tail <file> [n]    first/last n lines');
     printLine('  wc <file>               count lines/words/chars');
     printLine('  grep <pattern> <file>   search inside a file');
+    printLine('code:');
+    printLine('  run <file> [args]       compile and run it (c, c++, rust, go, py, ...)');
+    printLine('  run -i <file>           same, but ask for input first');
+    printLine('  langs                   which file types can run');
     printLine('  cp <src> <dst>          copy file or folder');
     printLine('  mv <src> <dst>          move / rename');
     printLine('  rm <path>               delete a file or folder');
@@ -522,6 +526,139 @@ const COMMANDS = {
   }
 };
 
+const RUN_API = '/api/run';
+
+function extOf(name) {
+  const m = /\.([a-z0-9]+)$/i.exec(name || '');
+  return m ? m[1].toLowerCase() : '';
+}
+
+// takes over the normal prompt for one line, so stdin can be typed
+let waitingFor = null;
+
+function readLine() {
+  return new Promise(resolve => { waitingFor = resolve; });
+}
+
+async function askInput() {
+  printLine('input, finish with an empty line:');
+  const lines = [];
+
+  for (;;) {
+    const line = await readLine();
+    if (line === '') break;
+    lines.push(line);
+  }
+  return lines.length ? lines.join('\n') + '\n' : '';
+}
+
+async function runFile(args) {
+  if (!FS) {
+    printLine('no file system', 'err');
+    return;
+  }
+
+  let wantsInput = false;
+  if (args[0] === '-i') {
+    wantsInput = true;
+    args = args.slice(1);
+  }
+
+  const name = args[0];
+  if (!name) {
+    printLine('usage: run <file> [args]', 'err');
+    return;
+  }
+
+  const path = resolvePath(name);
+  const code = FS.readFile(path);
+
+  if (code === null || code === undefined) {
+    printLine(`run: ${name}: no such file`, 'err');
+    return;
+  }
+
+  const ext = extOf(name);
+  const stdin = wantsInput ? await askInput() : '';
+
+  printLine(`compiling and running ${name} ...`);
+
+  let data;
+  try {
+    const res = await fetch(RUN_API, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ext, code, stdin, args: args.slice(1) }),
+    });
+
+    if (res.status === 404) {
+      printLine('run: api/run.js is not deployed. this only works on the live site.', 'err');
+      return;
+    }
+
+    data = await res.json();
+  } catch (e) {
+    printLine('run: could not reach the runner', 'err');
+    return;
+  }
+
+  if (data.error) {
+    printLine('run: ' + data.error, 'err');
+    (data.notes || []).forEach(n => printLine('  ' + n, 'err'));
+    if (data.known) printLine('  known: ' + data.known.join(' '));
+    return;
+  }
+
+  if (data.compile && (data.compile.stderr || data.compile.code)) {
+    printLine('compiler:', 'err');
+    String(data.compile.stderr || data.compile.stdout).split('\n')
+      .filter(Boolean).forEach(l => printLine('  ' + l, 'err'));
+    if (data.compile.code) return;
+  }
+
+  const run = data.run || {};
+  String(run.stdout || '').split('\n').forEach((l, i, all) => {
+    if (l || i < all.length - 1) printLine(l);
+  });
+  String(run.stderr || '').split('\n').filter(Boolean).forEach(l => printLine(l, 'err'));
+
+  if (run.signal) printLine(`[killed by ${run.signal}]`, 'err');
+  else if (run.code) printLine(`[exit ${run.code}]`, 'err');
+}
+
+COMMANDS.run = (args) => { runFile(args); };
+
+// the files app or the code editor can hand a file over
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'runFile' || !e.data.path) return;
+  printCommand('run ' + e.data.path);
+  runFile([e.data.path]);
+});
+
+if (FS && FS.consumePendingRun) {
+  const pendingRun = FS.consumePendingRun();
+  if (pendingRun) {
+    setTimeout(() => {
+      printCommand('run ' + pendingRun);
+      runFile([pendingRun]);
+    }, 60);
+  }
+}
+
+COMMANDS.langs = () => {
+  fetch(RUN_API + '?langs=1')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d) {
+        printLine('langs: the runner is not available here', 'err');
+        return;
+      }
+      printLine('runnable file types:');
+      printLine('  ' + d.langs.join(' '));
+    })
+    .catch(() => printLine('langs: could not reach the runner', 'err'));
+};
+
 function runCommand(raw) {
   const trimmed = raw.trim();
   if (!trimmed) return;
@@ -543,6 +680,15 @@ function runCommand(raw) {
 
 inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
+    if (waitingFor) {
+      const value = inputEl.value;
+      printLine('> ' + value, 'cmd');
+      inputEl.value = '';
+      const resolve = waitingFor;
+      waitingFor = null;
+      resolve(value);
+      return;
+    }
     runCommand(inputEl.value);
     inputEl.value = '';
   } else if (e.key === 'ArrowUp') {

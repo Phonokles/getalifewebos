@@ -7,13 +7,25 @@ window.addEventListener('message', (e) => {
 });
 
 const LANG_EXT = {
-  python: 'py',
+  c: 'c',
   cpp: 'cpp',
-  txt: 'txt',
+  rust: 'rs',
+  go: 'go',
+  zig: 'zig',
+  java: 'java',
+  csharp: 'cs',
+  kotlin: 'kt',
+  swift: 'swift',
+  python: 'py',
+  js: 'js',
+  ts: 'ts',
+  ruby: 'rb',
+  php: 'php',
+  lua: 'lua',
+  bash: 'sh',
   html: 'html',
   css: 'css',
-  js: 'js',
-  rust: 'rs'
+  txt: 'txt',
 };
 
 const langPicker = document.getElementById('lang-picker');
@@ -29,6 +41,7 @@ function selectLang(lang) {
 
   currentLang = lang;
   filenameInput.value = `${base || 'untitled'}.${LANG_EXT[lang]}`;
+  if (typeof paintRun === 'function') paintRun();
 
   langPicker.classList.add('hidden');
   editorView.classList.add('active');
@@ -77,6 +90,40 @@ addDataBtn.addEventListener('click', () => {
   flashBtn(addDataBtn, err ? err : 'Saved');
 });
 
+const runBtn = document.getElementById('btn-run');
+
+function canRun() {
+  const name = currentFilename();
+  if (!FS) return false;
+  return FS.isPage(name) || (FS.isRunnable && FS.isRunnable(name));
+}
+
+// a page opens in the browser, code goes to the terminal, anything else hides
+function paintRun() {
+  runBtn.style.display = canRun() ? '' : 'none';
+}
+
+runBtn.addEventListener('click', () => {
+  if (!FS) return;
+
+  // save first, otherwise you would run the version from before your last edit
+  const err = FS.writeFile(currentFolder, currentFilename(), textarea.value);
+  if (err) {
+    runBtn.textContent = err;
+    clearTimeout(runBtn._t);
+    runBtn._t = setTimeout(() => { runBtn.innerHTML = 'Run &#9654;'; }, 1600);
+    return;
+  }
+
+  const path = currentFolder ? currentFolder + '/' + currentFilename() : currentFilename();
+
+  if (FS.isPage(currentFilename())) FS.requestOpenInBrowser(path);
+  else FS.requestRun(path);
+});
+
+filenameInput.addEventListener('input', paintRun);
+paintRun();
+
 function flashBtn(btn, text) {
   const original = 'Add in Data';
   btn.textContent = text;
@@ -101,6 +148,7 @@ function openFromFS(path) {
   currentLang = EXT_LANG[ext] || 'txt';
 
   filenameInput.value = name;
+  if (typeof paintRun === 'function') paintRun();
   textarea.value = content;
 
   langPicker.classList.add('hidden');

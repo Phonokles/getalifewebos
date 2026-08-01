@@ -183,3 +183,14 @@ html, body {
 .editor-textarea::placeholder {
   color: rgba(var(--fg-rgb), 0.25);
 }
+
+.editor-btn-run {
+  border-color: rgba(var(--fg-rgb), 0.35);
+  color: rgb(var(--fg-rgb));
+}
+
+.editor-btn-run:hover {
+  background: rgba(var(--fg-rgb), 0.12);
+  border-color: rgba(var(--fg-rgb), 0.7);
+  color: rgb(var(--fg-rgb));
+}

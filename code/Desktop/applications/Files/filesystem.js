@@ -116,13 +116,80 @@
     _pendingOpen: null,
     _pendingImage: null,
 
+    _pendingPage: null,
+
+    _pendingRun: null,
+
     isImage(path) {
       return /\.(png|jpe?g|gif|webp|svg)$/i.test(path || '');
     },
 
+    isPage(path) {
+      return /\.html?$/i.test(path || '');
+    },
+
+    isRunnable(path) {
+      return /\.(c|cpp|cc|cxx|rs|go|zig|java|cs|kt|swift|py|js|ts|rb|php|lua|sh)$/i.test(path || '');
+    },
+
+    requestRun(path) {
+      this._pendingRun = path;
+
+      let win = document.querySelector('.app-window[data-app="win-terminal"]')
+             || document.getElementById('win-terminal');
+
+      if (!win) {
+        if (typeof openTerminal === 'function') win = openTerminal();
+      } else {
+        win.dataset.minimized = 'false';
+        win.style.display = '';
+        if (typeof setFocus === 'function') setFocus(win);
+        if (typeof relayout === 'function') relayout();
+      }
+
+      const frame = win ? win.querySelector('iframe') : null;
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'runFile', path }, '*');
+      }
+    },
+
+    consumePendingRun() {
+      const p = this._pendingRun;
+      this._pendingRun = null;
+      return p;
+    },
+
     requestOpen(path) {
       if (this.isImage(path)) this.requestOpenInViewer(path);
+      else if (this.isPage(path)) this.requestOpenInBrowser(path);
       else this.requestOpenInEditor(path);
+    },
+
+    requestOpenInBrowser(path) {
+      this._pendingPage = path;
+
+      let win = document.querySelector('.app-window[data-app="win-browser"]')
+             || document.getElementById('win-browser');
+
+      if (!win) {
+        if (typeof openBrowser === 'function') win = openBrowser();
+      } else {
+        win.dataset.minimized = 'false';
+        win.style.display = '';
+        if (typeof setFocus === 'function') setFocus(win);
+        if (typeof relayout === 'function') relayout();
+      }
+
+      const frame = win ? win.querySelector('iframe') : null;
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'openPage', path }, '*');
+      }
+    },
+
+    consumePendingPage() {
+      const p = this._pendingPage;
+      this._pendingPage = null;
+      return p;
     },
 
     requestOpenInViewer(path) {

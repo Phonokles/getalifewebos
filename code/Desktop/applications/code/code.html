@@ -13,13 +13,25 @@
     <div class="lang-picker" id="lang-picker">
       <div class="lang-picker-title">Choose file type</div>
       <div class="lang-grid">
-        <button class="lang-card" data-lang="python">Python<span>.py</span></button>
+        <button class="lang-card" data-lang="c">C<span>.c</span></button>
         <button class="lang-card" data-lang="cpp">C++<span>.cpp</span></button>
-        <button class="lang-card" data-lang="txt">Text<span>.txt</span></button>
+        <button class="lang-card" data-lang="rust">Rust<span>.rs</span></button>
+        <button class="lang-card" data-lang="go">Go<span>.go</span></button>
+        <button class="lang-card" data-lang="zig">Zig<span>.zig</span></button>
+        <button class="lang-card" data-lang="java">Java<span>.java</span></button>
+        <button class="lang-card" data-lang="csharp">C#<span>.cs</span></button>
+        <button class="lang-card" data-lang="kotlin">Kotlin<span>.kt</span></button>
+        <button class="lang-card" data-lang="swift">Swift<span>.swift</span></button>
+        <button class="lang-card" data-lang="python">Python<span>.py</span></button>
+        <button class="lang-card" data-lang="js">JavaScript<span>.js</span></button>
+        <button class="lang-card" data-lang="ts">TypeScript<span>.ts</span></button>
+        <button class="lang-card" data-lang="ruby">Ruby<span>.rb</span></button>
+        <button class="lang-card" data-lang="php">PHP<span>.php</span></button>
+        <button class="lang-card" data-lang="lua">Lua<span>.lua</span></button>
+        <button class="lang-card" data-lang="bash">Bash<span>.sh</span></button>
         <button class="lang-card" data-lang="html">HTML<span>.html</span></button>
         <button class="lang-card" data-lang="css">CSS<span>.css</span></button>
-        <button class="lang-card" data-lang="js">JavaScript<span>.js</span></button>
-        <button class="lang-card" data-lang="rust">Rust<span>.rs</span></button>
+        <button class="lang-card" data-lang="txt">Text<span>.txt</span></button>
       </div>
     </div>
 
@@ -27,6 +39,7 @@
       <div class="editor-topbar">
         <input type="text" class="editor-filename" id="editor-filename" spellcheck="false">
         <div class="editor-actions">
+          <button class="editor-btn editor-btn-run" id="btn-run">Run &#9654;</button>
           <button class="editor-btn" id="btn-change-type">Change type</button>
           <button class="editor-btn" id="btn-add-local">Add locally</button>
           <button class="editor-btn editor-btn-primary" id="btn-add-data">Add in Data</button>
@@ -37,6 +50,7 @@
 
   </div>
 
+  <script src="../../keybinds/keyforward.js"></script>
   <script src="code.js"></script>
 </body>
 </html>

@@ -252,3 +252,25 @@ html, body {
   text-transform: uppercase;
   color: rgba(var(--fg-rgb), 0.3);
 }
+.files-item-run {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  border-radius: 4px;
+  color: rgba(var(--fg-rgb), 0.5);
+  font-size: 0.62rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.files-item-run:hover {
+  background: rgba(var(--fg-rgb), 0.12);
+  color: rgb(var(--fg-rgb));
+}
+
+.files-item-run + .files-item-del {
+  margin-left: 4px;
+}

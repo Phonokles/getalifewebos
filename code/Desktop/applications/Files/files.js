@@ -72,9 +72,14 @@ function renderList() {
   items.forEach(item => {
     const row = document.createElement('button');
     row.className = 'files-item';
+    const isPage = item.type === 'file' && FS.isPage && FS.isPage(item.name);
+    const isCode = item.type === 'file' && FS.isRunnable && FS.isRunnable(item.name);
+    const runnable = isPage || isCode;
+
     row.innerHTML = `
       ${item.type === 'folder' ? ICON_FOLDER : ICON_FILE}
       <span class="files-item-name"></span>
+      ${runnable ? `<span class="files-item-run" title="${isPage ? 'Open in the browser' : 'Run in the terminal'}">&#9654;</span>` : ''}
       <span class="files-item-del" title="Delete">${ICON_DEL}</span>
     `;
     // textContent so weird characters in names can't break the markup
@@ -85,10 +90,16 @@ function renderList() {
         FS.remove(joinPath(currentPath, item.name));
         return;
       }
+      if (e.target.closest('.files-item-run')) {
+        const full = joinPath(currentPath, item.name);
+        if (isPage) FS.requestOpenInBrowser(full);
+        else FS.requestRun(full);
+        return;
+      }
       if (item.type === 'folder') {
         navigate(joinPath(currentPath, item.name));
       } else {
-        FS.requestOpenInEditor(joinPath(currentPath, item.name));
+        FS.requestOpen(joinPath(currentPath, item.name));
       }
     });
 

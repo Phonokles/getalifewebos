@@ -27,7 +27,7 @@ const missing = ['gallery', 'studio', 'gallery-grid', 'canvas', 'stage', 'filena
 
 if (missing.length) {
   document.body.innerHTML =
-    '<div style="padding:20px;font:0.72rem/1.9 monospace;letter-spacing:1px;color:#e05252">' +
+    '<div style="padding:20px;font:0.72rem/1.9 monospace;letter-spacing:1px;color:#ddd">' +
     'paint.html is out of date, missing: ' + missing.join(', ') +
     '<br><br>hard reload the page with ctrl+shift+r</div>';
   throw new Error('[paint] outdated paint.html, missing: ' + missing.join(', '));

@@ -10,6 +10,35 @@ const HOME = 'about:home';
 const RESULTS = 'about:results?';
 const VIDEOS = 'about:videos?';
 const PROXY = '/api/proxy?url=';
+const FILE = 'file:';
+
+const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
+
+// links inside a local page should stay inside the os
+const FILE_HOOK = `<script>
+(function () {
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (href.startsWith('javascript:') || href.startsWith('#')) return;
+    e.preventDefault();
+    parent.postMessage({ type: 'fileNav', href: href }, '*');
+  }, true);
+}());
+<\/script>`;
+
+function resolveFile(base, href) {
+  if (/^https?:/i.test(href)) return href;
+
+  const parts = base.split('/').slice(0, -1);
+  href.split('/').forEach(part => {
+    if (!part || part === '.') return;
+    if (part === '..') parts.pop();
+    else parts.push(part);
+  });
+  return FILE + parts.join('/');
+}
 
 // the proxy only exists on the deployed site, not under live server.
 // a yes is remembered, a no is retried later so one hiccup does not kill it
@@ -97,6 +126,8 @@ function toUrl(input) {
 
   // looks like a domain or url, otherwise treat it as a search
   if (/^[a-z]+:\/\//i.test(raw)) return raw;
+  if (raw.startsWith(FILE)) return raw;
+  if (FS && /\.(html?|svg)$/i.test(raw) && FS.exists(raw)) return FILE + raw;
   if (/^yt\s+/i.test(raw)) return VIDEOS + encodeURIComponent(raw.replace(/^yt\s+/i, ''));
   if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(raw)) return 'https://' + raw;
   return RESULTS + encodeURIComponent(raw) + (mode === 'wikipedia' ? '&wiki=1' : '');
@@ -112,6 +143,7 @@ function labelFor(url) {
   if (url === HOME) return 'new tab';
   if (url.startsWith(RESULTS)) return decodeURIComponent(url.slice(RESULTS.length)).slice(0, 18);
   if (url.startsWith(VIDEOS)) return 'yt: ' + decodeURIComponent(url.slice(VIDEOS.length)).slice(0, 14);
+  if (url.startsWith(FILE)) return url.slice(FILE.length).split('/').pop();
   if (youtubeId(url)) return 'video';
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -219,6 +251,11 @@ function render(tab, url) {
     return;
   }
 
+  if (url.startsWith(FILE)) {
+    tab.view.appendChild(fileFrame(url.slice(FILE.length)));
+    return;
+  }
+
   const vid = youtubeId(url);
   if (vid) {
     const frame = document.createElement('iframe');
@@ -258,6 +295,19 @@ function render(tab, url) {
   });
 }
 
+function localPages() {
+  if (!FS) return [];
+  const out = [];
+  (function walk(path) {
+    FS.list(path).forEach(item => {
+      const full = path ? path + '/' + item.name : item.name;
+      if (item.type === 'folder') walk(full);
+      else if (/\.html?$/i.test(item.name)) out.push(full);
+    });
+  })('');
+  return out.slice(0, 10);
+}
+
 function buildHome() {
   const home = document.createElement('div');
   home.className = 'br-home';
@@ -276,6 +326,25 @@ function buildHome() {
     const url = toUrl(input.value);
     if (url) go(url);
   });
+
+  const local = localPages();
+  if (local.length) {
+    const label = document.createElement('div');
+    label.className = 'br-home-hint';
+    label.textContent = 'pages in your filesystem';
+    home.appendChild(label);
+
+    const own = document.createElement('div');
+    own.className = 'br-links';
+    local.forEach(path => {
+      const b = document.createElement('button');
+      b.className = 'br-link own';
+      b.textContent = path;
+      b.addEventListener('click', () => go(FILE + path));
+      own.appendChild(b);
+    });
+    home.appendChild(own);
+  }
 
   const links = document.createElement('div');
   links.className = 'br-links';
@@ -447,6 +516,26 @@ function renderResults(list, items, query) {
 
 // no allow-same-origin on purpose: the proxied page comes from our own origin,
 // so without it a hostile page could reach into the os
+// runs the page straight from the virtual filesystem. no allow-same-origin, so
+// a page you wrote cannot reach into the os itself
+function fileFrame(path) {
+  const holder = document.createElement('div');
+  holder.className = 'br-holder';
+
+  const content = FS ? FS.readFile(path) : null;
+
+  if (content === null || content === undefined) {
+    holder.innerHTML = '<div class="br-results-note">' + path + ' is not in the filesystem</div>';
+    return holder;
+  }
+
+  const frame = document.createElement('iframe');
+  frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+  frame.setAttribute('srcdoc', content + FILE_HOOK);
+  holder.appendChild(frame);
+  return holder;
+}
+
 function proxyFrame(url) {
   const frame = document.createElement('iframe');
   frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-modals');
@@ -455,8 +544,24 @@ function proxyFrame(url) {
 }
 
 window.addEventListener('message', (e) => {
-  if (e.data?.type !== 'proxyNav' || !e.data.url) return;
-  go(e.data.url);
+  if (e.data?.type === 'proxyNav' && e.data.url) {
+    go(e.data.url);
+    return;
+  }
+
+  // the files app or the code editor asked us to run a local page
+  if (e.data?.type === 'openPage' && e.data.path) {
+    if (!active()) newTab(HOME);
+    go(FILE + e.data.path);
+    return;
+  }
+
+  if (e.data?.type === 'fileNav' && e.data.href) {
+    const tab = active();
+    const here = tab && tab.history[tab.index];
+    if (!here || !here.startsWith(FILE)) return;
+    go(resolveFile(here.slice(FILE.length), e.data.href));
+  }
 });
 
 function buildVideos(query) {
@@ -661,4 +766,6 @@ urlEl.addEventListener('keydown', (e) => {
   if (url) go(url);
 });
 
-newTab(HOME);
+// a page handed over from the files app opens right away
+const pendingPage = FS && FS.consumePendingPage ? FS.consumePendingPage() : null;
+newTab(pendingPage ? FILE + pendingPage : HOME);

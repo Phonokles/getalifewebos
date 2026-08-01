@@ -52,7 +52,7 @@ function errorPage(title, detail, url) {
          background:#0e0e0e; color:#bbb; font:13px/1.9 monospace; padding:30px; }
   b { color:#fff; font-weight:normal; font-size:15px; letter-spacing:2px; }
   p { max-width:420px; color:#777; margin:0; }
-  a { color:#7fbcf5; text-decoration:none; border:1px solid #333; padding:8px 14px;
+  a { color:#ddd; text-decoration:none; border:1px solid #333; padding:8px 14px;
       border-radius:7px; }
   a:hover { background:#1a1a1a; }
 </style>
