@@ -202,10 +202,12 @@ async function viaGodbolt(ext, code, stdin, args) {
 
 // a second route for interpreted languages, since godbolt only does compiled
 // ones. piston mirrors that still allow execute without a key.
-const OPEN_PISTON = [
-  'https://piston.ryanhs.my.id/api/v2',
-  'https://piston.crashboys.com/api/v2',
-];
+// public piston mirrors come and go constantly. set PISTON_HOSTS on vercel
+// (comma separated) to point at one that works, or at your own instance.
+const OPEN_PISTON = (process.env.PISTON_HOSTS || '')
+  .split(',')
+  .map(h => h.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 async function viaOpenPiston(lang, ext, code, stdin, args) {
   const notes = [];
@@ -259,6 +261,39 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
+    return;
+  }
+
+  // /api/run?probe=https://host/api/v2 tests one mirror by really running code
+  if (req.query.probe) {
+    const host = String(req.query.probe).replace(/\/$/, '');
+    const out = { host, runtimes: null, execute: null };
+
+    try {
+      const r = await fetch(host + '/runtimes');
+      out.runtimes = r.status;
+    } catch (e) {
+      out.runtimes = String(e && e.message || e);
+    }
+
+    try {
+      const r = await fetch(host + '/execute', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          language: 'python', version: '3.10.0',
+          files: [{ name: 'main.py', content: 'print("ok")' }],
+        }),
+      });
+      const text = (await r.text()).slice(0, 200);
+      out.execute = { status: r.status, body: text };
+      out.usable = r.ok && text.includes('ok');
+    } catch (e) {
+      out.execute = String(e && e.message || e);
+      out.usable = false;
+    }
+
+    res.status(200).json(out);
     return;
   }
 
@@ -333,7 +368,7 @@ export default async function handler(req, res) {
   // up within a moment, so it gets a few tries before moving on
   let wb = null;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     wb = await viaWandbox(ext, code, stdin);
 
     if (wb.result) {
@@ -342,7 +377,8 @@ export default async function handler(req, res) {
     }
     if (!wb.retry) break;
 
-    await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+    // their container backend frees up in waves, so keep trying a bit longer
+    await new Promise(r => setTimeout(r, 900 + attempt * 900));
   }
 
   notes.push('wandbox: ' + (wb.error || wb.retry));
@@ -408,6 +444,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     error: 'no runner answered',
     notes,
-    hint: 'all free services refused. see api/run.js to add one or set PISTON_KEY.',
+    hint: 'set PISTON_HOSTS on vercel to a working piston mirror, '
+      + 'or PISTON_KEY for emkc. test a mirror with /api/run?probe=https://host/api/v2',
   });
 }
