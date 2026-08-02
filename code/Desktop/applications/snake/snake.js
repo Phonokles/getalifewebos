@@ -92,18 +92,37 @@ function draw() {
     }
   }
 
+  // round apple instead of a square
   ctx.save();
   ctx.shadowColor = color(0.8);
   ctx.shadowBlur = 10;
   ctx.fillStyle = color(0.95);
-  ctx.fillRect(food.x * CELL + 5, food.y * CELL + 5, CELL - 10, CELL - 10);
+  ctx.beginPath();
+  ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, (CELL - 10) / 2, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 
+  // same blocks as before, only with rounded corners
   snake.forEach((s, i) => {
-    const t = (i + 1) / snake.length;        
+    const t = (i + 1) / snake.length;
     ctx.fillStyle = color(0.25 + t * 0.7);
-    ctx.fillRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4);
+    roundRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4, 4);
+    ctx.fill();
   });
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 function gameOver() {

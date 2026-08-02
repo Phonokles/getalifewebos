@@ -250,6 +250,101 @@ function setupKeybindsPanel() {
   });
 }
 
+// same slider as the bar one, just for windows
+function setupAlphaSlider(id, labelId, key, msgType, fallback) {
+  const slider = document.getElementById(id);
+  if (!slider) return;
+
+  const fill = slider.querySelector('.alpha-fill');
+  const thumb = slider.querySelector('.alpha-thumb');
+  const label = document.getElementById(labelId);
+
+  let alpha = parseFloat(localStorage.getItem(key));
+  if (isNaN(alpha)) alpha = fallback;
+
+  function paint() {
+    const pct = Math.round(alpha * 100);
+    fill.style.width = pct + '%';
+    thumb.style.left = pct + '%';
+    label.textContent = (100 - pct) + '% transparent';
+  }
+
+  let dragging = false;
+
+  function fromEvent(e) {
+    const r = slider.getBoundingClientRect();
+    if (!r.width) return;
+    alpha = Math.max(0.3, Math.min(1, (e.clientX - r.left) / r.width));
+    paint();
+    localStorage.setItem(key, String(alpha));
+    window.parent.postMessage({ type: msgType, alpha }, '*');
+  }
+
+  slider.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    slider.setPointerCapture?.(e.pointerId);
+    fromEvent(e);
+  });
+  slider.addEventListener('pointermove', (e) => { if (dragging) fromEvent(e); });
+  slider.addEventListener('pointerup', () => { dragging = false; });
+  slider.addEventListener('pointercancel', () => { dragging = false; });
+
+  paint();
+}
+
+function setupBarPanel() {
+  const sides = document.querySelectorAll('.bar-side');
+  let side = localStorage.getItem('barSide') || 'bottom';
+
+  sides.forEach(b => {
+    b.classList.toggle('active', b.dataset.side === side);
+    b.addEventListener('click', () => {
+      side = b.dataset.side;
+      sides.forEach(x => x.classList.toggle('active', x === b));
+      localStorage.setItem('barSide', side);
+      window.parent.postMessage({ type: 'setBarSide', side }, '*');
+    });
+  });
+
+  const slider = document.getElementById('bar-alpha');
+  const fill = slider.querySelector('.alpha-fill');
+  const thumb = slider.querySelector('.alpha-thumb');
+  const label = document.getElementById('bar-alpha-value');
+
+  // stored as opacity, shown as transparency, so the label is inverted
+  let alpha = parseFloat(localStorage.getItem('barAlpha'));
+  if (isNaN(alpha)) alpha = 0.82;
+
+  function paint() {
+    const pct = Math.round(alpha * 100);
+    fill.style.width = pct + '%';
+    thumb.style.left = pct + '%';
+    label.textContent = (100 - pct) + '% transparent';
+  }
+
+  let dragging = false;
+
+  function fromEvent(e) {
+    const r = slider.getBoundingClientRect();
+    if (!r.width) return;
+    alpha = Math.max(0.2, Math.min(1, (e.clientX - r.left) / r.width));
+    paint();
+    localStorage.setItem('barAlpha', String(alpha));
+    window.parent.postMessage({ type: 'setBarAlpha', alpha }, '*');
+  }
+
+  slider.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    slider.setPointerCapture?.(e.pointerId);
+    fromEvent(e);
+  });
+  slider.addEventListener('pointermove', (e) => { if (dragging) fromEvent(e); });
+  slider.addEventListener('pointerup', () => { dragging = false; });
+  slider.addEventListener('pointercancel', () => { dragging = false; });
+
+  paint();
+}
+
 function setupSystemPanel() {
   const btn = document.getElementById('welcome-toggle');
   let on = localStorage.getItem('skipWelcome') !== '1';
@@ -270,3 +365,5 @@ setupWidgetsPanel();
 setupWindowsPanel();
 setupKeybindsPanel();
 setupSystemPanel();
+setupBarPanel();
+setupAlphaSlider('win-alpha', 'win-alpha-value', 'winAlpha', 'setWinAlpha', 0.88);

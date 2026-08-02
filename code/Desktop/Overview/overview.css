@@ -108,7 +108,7 @@
   background-size: cover;
   background-position: center;
   border: 2px solid rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -173,7 +173,7 @@
   pointer-events: auto;
   background: rgba(0, 0, 0, 0.25);
   border: 1.5px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   cursor: pointer;
   transition: border-color 0.15s;
 }
@@ -200,4 +200,3 @@
 .ov-ws-slot.active span {
   color: #fff;
 }
-

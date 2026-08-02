@@ -14,7 +14,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const pets = [];
   let crashoutTriggered = false;
 
+  function barSide() {
+    return document.body.dataset.bar || 'bottom';
+  }
+
+  function reparentPets() {
+    const host = barSide() === 'bottom' ? footerBar : document.body;
+    pets.forEach(p => {
+      if (p.wrapper && p.wrapper.parentElement !== host) host.appendChild(p.wrapper);
+    });
+  }
+
+  // the bar can move at any time, so the pets have to follow
+  new MutationObserver(() => {
+    if (!document.body) return;
+    reparentPets();
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-bar'] });
+
   function getCurrentGlowFootprint() {
+    // with the bar on a side or on top there is no glow line to walk along,
+    // so the pets use the full screen floor instead
+    const side = barSide();
+
+    if (side !== 'bottom') {
+      // the bar takes a strip away on the side it sits on
+      const left = side === 'left' ? 56 : 0;
+      const right = window.innerWidth - (side === 'right' ? 56 : 0);
+      return { left, right, width: Math.max(64, right - left) };
+    }
+
     const indicatorWidth = indicator.offsetWidth;
     return {
       left: indicatorCurrentX,
@@ -74,7 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
       <img src="../assets/${species}_lie_8fps.gif" class="fox-frame fox-lie" alt="${species} lie">
       <img src="../assets/${species}_walk_8fps.gif" class="fox-frame fox-walk" alt="${species} walk">
     `;
-    footerBar.appendChild(wrapper);
+    // inside the bar they would be trapped in its box, which breaks as soon as
+    // the bar is narrow or on top, so anywhere but bottom they live on the body
+    (barSide() === 'bottom' ? footerBar : document.body).appendChild(wrapper);
 
     const state = {
       wrapper,

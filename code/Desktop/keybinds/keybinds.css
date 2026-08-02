@@ -22,9 +22,9 @@
   overflow-y: auto;
   padding: 17px 20px 13px;
   background: rgb(var(--bg-rgb-softer));
-  border: 1px solid rgba(var(--fg-rgb), 0.15);
-  border-radius: 10px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--lift-lg);
   animation: keys-in 0.14s ease;
 }
 
@@ -39,7 +39,7 @@
 
 .keys-panel::-webkit-scrollbar-thumb {
   background: rgba(var(--fg-rgb), 0.15);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .keys-title {
@@ -60,6 +60,24 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 26px;
+}
+
+.keys-pin {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-sm);
+  font-size: 0.74rem;
+  letter-spacing: 1px;
+  color: rgb(var(--fg-rgb));
+}
+
+.keys-pin-desc {
+  margin-left: auto;
+  color: rgba(var(--fg-rgb), 0.35);
 }
 
 .keys-row {

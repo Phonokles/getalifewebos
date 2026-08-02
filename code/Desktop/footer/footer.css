@@ -9,12 +9,17 @@
   align-items: center;
   gap: 12px;
   padding: 0 10px;
-  min-height: 40px;
-  border-top: 1px solid rgba(var(--fg-rgb), 0.15);
-  background: rgb(var(--bg-rgb));
+  min-height: 44px;
+  border-top: 1px solid var(--edge);
+  background: linear-gradient(to bottom,
+    rgba(var(--fg-rgb), 0.025), transparent 60%),
+    rgba(var(--bg-rgb), 0.82);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   color: rgba(var(--fg-rgb), 0.4);
   font-size: 0.85rem;
   overflow: visible;
+  box-shadow: 0 -1px 24px rgba(0, 0, 0, 0.25);
 }
 
 .footer *,
@@ -61,10 +66,10 @@
   justify-content: center;
   background: none;
   border: 1px solid rgba(var(--fg-rgb), 0.13);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(var(--fg-rgb), 0.5);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .launcher-btn:hover {
@@ -79,7 +84,7 @@
   display: flex;
   gap: 3px;
   background: rgba(var(--fg-rgb), 0.05);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   padding: 2px;
 }
 
@@ -91,12 +96,12 @@
   justify-content: center;
   background: none;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   color: rgba(var(--fg-rgb), 0.4);
   font-family: 'Courier New', monospace;
   font-size: 0.68rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .ws-dot:hover {
@@ -124,17 +129,17 @@
 
 .taskbar-app-btn {
   position: relative;
-  width: 29px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(var(--fg-rgb), 0.45);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .taskbar-app-btn:hover {
@@ -179,8 +184,8 @@
   padding: 7px;
   background: rgba(var(--bg-rgb-softer), 0.96);
   border: 1px solid rgba(var(--fg-rgb), 0.12);
-  border-radius: 8px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  border-radius: var(--r-md);
+  box-shadow: var(--lift-lg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 999997;
@@ -217,7 +222,7 @@
   padding: 5px 6px;
   background: rgb(var(--bg-rgb));
   border: 1px solid rgba(var(--fg-rgb), 0.09);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -235,7 +240,7 @@
   flex-shrink: 0;
   position: relative;
   border: 1px solid rgba(var(--fg-rgb), 0.14);
-  border-radius: 3px;
+  border-radius: 4px;
   background: rgb(var(--bg-rgb-soft));
   overflow: hidden;
 }
@@ -310,13 +315,13 @@
   padding: 4px 8px;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(var(--fg-rgb), 0.6);
   font-family: 'Bitcount', 'Courier New', monospace;
   font-size: 0.72rem;
   letter-spacing: 1.5px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .footer-clock:hover {
@@ -336,10 +341,10 @@
   justify-content: center;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(var(--fg-rgb), 0.45);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .power-btn:hover {
@@ -359,9 +364,9 @@
   background: rgba(var(--bg-rgb-softer), 0.9);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--lift-lg);
   z-index: 999998;
 }
 
@@ -381,8 +386,8 @@
   background: rgba(var(--bg-rgb-softer), 0.96);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-radius: 12px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-lg);
   z-index: 999998;
 }
 
@@ -498,7 +503,7 @@ text-align:center;
 
 .popup-today {
   background: rgba(var(--fg-rgb),0.06);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
 }
 
@@ -526,7 +531,7 @@ text-align:center;
   color: rgba(var(--fg-rgb), 0.8);
   cursor: pointer;
   padding: 9px 14px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   gap: 11px;
@@ -534,7 +539,7 @@ text-align:center;
   font-size: 0.88rem;
   text-align: left;
   width: 100%;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .power-option:hover {
@@ -555,10 +560,10 @@ text-align:center;
   justify-content: center;
   background: none;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   color: rgba(var(--fg-rgb), 0.45);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .vol-btn:hover {
@@ -587,8 +592,8 @@ text-align:center;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(var(--fg-rgb), 0.1);
-  border-radius: 14px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-lg);
   z-index: 999998;
   font-family: 'Bitcount', 'Courier New', monospace;
 }
@@ -611,7 +616,7 @@ text-align:center;
 .vol-track {
   width: 100%;
   height: 10px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: rgba(var(--fg-rgb), 0.13);
   overflow: hidden;
 }
@@ -619,7 +624,7 @@ text-align:center;
 .vol-fill {
   height: 100%;
   width: 50%;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: rgb(var(--fg-rgb));
   transition: width 0.05s linear;
 }
@@ -653,13 +658,129 @@ text-align:center;
 }
 
 .tb-icon {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   display: block;
-  image-rendering: pixelated;
-  border-radius: 4px;
+  /* smoothing keeps thin strokes alive when shrinking a 128px drawing */
+  image-rendering: auto;
+  border-radius: var(--r-sm);
 }
 
 .taskbar-app-btn:has(.tb-icon) {
-  width: 31px;
+  width: 34px;
+  height: 30px;
+}
+
+.taskbar-app-btn.no-icon {
+  font-family: 'Bitcount', 'Courier New', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+}
+
+
+/* the bar can sit on any edge. vertical sides stack their groups instead. */
+body[data-bar="top"] .footer {
+  top: 0;
+  bottom: auto;
+  border-top: none;
+  border-bottom: 1px solid var(--edge);
+  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(to top,
+    rgba(var(--fg-rgb), 0.025), transparent 60%),
+    rgba(var(--bg-rgb), var(--bar-alpha, 0.82));
+}
+
+body[data-bar="left"] .footer,
+body[data-bar="right"] .footer {
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px 0;
+  gap: 14px;
+  border-top: none;
+  background: linear-gradient(to right,
+    rgba(var(--fg-rgb), 0.025), transparent 60%),
+    rgba(var(--bg-rgb), var(--bar-alpha, 0.82));
+}
+
+body[data-bar="left"] .footer {
+  right: auto;
+  border-right: 1px solid var(--edge);
+  box-shadow: 1px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+body[data-bar="right"] .footer {
+  left: auto;
+  border-left: 1px solid var(--edge);
+  box-shadow: -1px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+body[data-bar="left"] .footer-left,
+body[data-bar="right"] .footer-left,
+body[data-bar="left"] .footer-right,
+body[data-bar="right"] .footer-right,
+body[data-bar="left"] .taskbar-apps,
+body[data-bar="right"] .taskbar-apps,
+body[data-bar="left"] .workspace-switcher,
+body[data-bar="right"] .workspace-switcher {
+  flex-direction: column;
+}
+
+body[data-bar="left"] .footer-center,
+body[data-bar="right"] .footer-center {
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* the clock has to stack on a narrow bar */
+body[data-bar="left"] .footer-clock,
+body[data-bar="right"] .footer-clock {
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 4px;
+  font-size: 0.58rem;
+  letter-spacing: 0.5px;
+}
+
+body[data-bar="left"] .taskbar-sep,
+body[data-bar="right"] .taskbar-sep {
+  width: 17px;
+  height: 1px;
+  margin: 4px 0;
+}
+
+body[data-bar="left"] .footer-indicator,
+body[data-bar="right"] .footer-indicator {
+  display: none;
+}
+
+/* popups follow the bar */
+body[data-bar="top"] .clock-popup,
+body[data-bar="top"] .power-popup,
+body[data-bar="top"] .vol-popup,
+body[data-bar="top"] .tb-preview {
+  bottom: auto;
+  top: 50px;
+}
+
+body[data-bar="left"] .clock-popup,
+body[data-bar="left"] .power-popup,
+body[data-bar="left"] .vol-popup,
+body[data-bar="left"] .tb-preview {
+  bottom: 12px;
+  left: 62px;
+  right: auto;
+  transform: none;
+}
+
+body[data-bar="right"] .clock-popup,
+body[data-bar="right"] .power-popup,
+body[data-bar="right"] .vol-popup,
+body[data-bar="right"] .tb-preview {
+  bottom: 12px;
+  right: 62px;
+  left: auto;
+  transform: none;
 }

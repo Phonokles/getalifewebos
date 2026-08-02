@@ -46,11 +46,29 @@ function switchWorkspace(n) {
 }
 
 function getWorkArea() {
-  const topbar = document.querySelector('.topbar');
   const footer = document.querySelector('.footer');
-  const top    = topbar ? topbar.getBoundingClientRect().bottom : 0;
-  const bottom = footer ? footer.getBoundingClientRect().top : window.innerHeight;
-  return { x: GAP, y: top + GAP, w: window.innerWidth - GAP * 2, h: bottom - top - GAP * 2 };
+  const side = document.body.dataset.bar || 'bottom';
+
+  let top = 0;
+  let bottom = window.innerHeight;
+  let left = 0;
+  let right = window.innerWidth;
+
+  // the bar takes space away from whichever edge it sits on
+  if (footer) {
+    const r = footer.getBoundingClientRect();
+    if (side === 'top') top = r.bottom;
+    else if (side === 'left') left = r.right;
+    else if (side === 'right') right = r.left;
+    else bottom = r.top;
+  }
+
+  return {
+    x: left + GAP,
+    y: top + GAP,
+    w: right - left - GAP * 2,
+    h: bottom - top - GAP * 2,
+  };
 }
 
 function visibleWins() {
@@ -112,7 +130,7 @@ function relayout() {
   const fullscreen = wins.filter(w => w.dataset.fullscreen === 'true');
   const normal     = wins.filter(w => w.dataset.fullscreen !== 'true');
 
-  fullscreen.forEach(w => placeWin(w, 0, area.y - GAP, window.innerWidth, area.h + GAP * 2));
+  fullscreen.forEach(w => placeWin(w, area.x - GAP, area.y - GAP, area.w + GAP * 2, area.h + GAP * 2));
 
   if (wmMode === 'hyprland') {
     layoutDwindle(normal, area, false);
@@ -309,6 +327,39 @@ if (!applyWallpaper(localStorage.getItem('wallpaper'))) {
   localStorage.setItem('wallpaper', BUILTIN_WALLPAPERS[0]);
   applyWallpaper(BUILTIN_WALLPAPERS[0]);
 }
+
+// css variables do not cross into an iframe, so the value is pushed to each app
+function applyWinAlpha(alpha) {
+  document.documentElement.style.setProperty('--win-alpha', String(alpha));
+  localStorage.setItem('winAlpha', String(alpha));
+
+  document.querySelectorAll('.app-window iframe').forEach(frame => {
+    try {
+      frame.contentWindow.postMessage({ type: 'setWinAlpha', alpha }, '*');
+    } catch (e) {
+      // frame not ready yet, it picks the value up on load
+    }
+  });
+}
+
+function applyBar(side, alpha) {
+  if (side) {
+    document.body.dataset.bar = side;
+    localStorage.setItem('barSide', side);
+  }
+  if (alpha !== undefined && alpha !== null) {
+    document.documentElement.style.setProperty('--bar-alpha', String(alpha));
+    localStorage.setItem('barAlpha', String(alpha));
+  }
+}
+
+applyBar(
+  localStorage.getItem('barSide') || 'bottom',
+  parseFloat(localStorage.getItem('barAlpha')) || 0.82
+);
+
+const savedWinAlpha = parseFloat(localStorage.getItem('winAlpha'));
+applyWinAlpha(isNaN(savedWinAlpha) ? 0.88 : savedWinAlpha);
 
 // the x lifts off the titlebar, grows to the window's smaller side and centers
 // itself, then the window goes, then the x goes
@@ -622,6 +673,15 @@ function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
     toggleFullscreen(win);
   });
 
+  // a fresh window has to be told the current transparency
+  setTimeout(() => {
+    const frame = win.querySelector('iframe');
+    const a = parseFloat(localStorage.getItem('winAlpha'));
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'setWinAlpha', alpha: isNaN(a) ? 0.88 : a }, '*');
+    }
+  }, 120);
+
   window.WebOSSound?.open();
   win.classList.add('win-open-anim');
   setTimeout(() => win.classList.remove('win-open-anim'), 200);
@@ -680,7 +740,7 @@ function openSnake() {
   return openWindow('win-snake', 'SNAKE', 'applications/snake/snake.html', 470, 540);
 }
 function openWelcome() {
-  return openWindow('win-welcome', 'WELCOME', 'applications/welcome/welcome.html', 540, 430, { singleton: true });
+  return openWindow('win-welcome', 'WELCOME', 'applications/welcome/welcome.html', 600, 560, { singleton: true });
 }
 function openBrowser() {
   return openWindow('win-browser', 'BROWSER', 'applications/browser/browser.html', 860, 600);
@@ -698,6 +758,19 @@ function openViewer() {
 
 
 window.addEventListener('message', (e) => {
+  if (e.data?.type === 'setWinAlpha') {
+    applyWinAlpha(e.data.alpha);
+  }
+
+  if (e.data?.type === 'setBarSide') {
+    applyBar(e.data.side);
+    if (typeof relayout === 'function') relayout();
+  }
+
+  if (e.data?.type === 'setBarAlpha') {
+    applyBar(null, e.data.alpha);
+  }
+
   if (e.data?.type === 'setWallpaper') {
     if (applyWallpaper(e.data.file)) {
       try {

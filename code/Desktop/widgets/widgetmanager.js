@@ -43,12 +43,43 @@
     if (date) date.style.fontSize = Math.max(8,  width * 0.045) + 'px';
   }
 
+  // the bar can sit on any edge, and a widget must not end up underneath it
+  function freeArea() {
+    const bar = document.querySelector('.footer');
+    const side = document.body.dataset.bar || 'bottom';
+
+    const area = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    if (!bar) return area;
+
+    const r = bar.getBoundingClientRect();
+    if (!r.width || !r.height) return area;
+
+    if (side === 'top') area.top = r.bottom;
+    else if (side === 'left') area.left = r.right;
+    else if (side === 'right') area.right = r.left;
+    else area.bottom = r.top;
+
+    return area;
+  }
+
+  function clampToFree(x, y, w, h) {
+    const a = freeArea();
+    const pad = 8;
+
+    return {
+      x: Math.max(a.left + pad, Math.min(x, a.right - w - pad)),
+      y: Math.max(a.top + pad, Math.min(y, a.bottom - h - pad)),
+    };
+  }
+
   function applyLayout(key) {
     const widget = el(key);
     const l = prefs.layout[key];
     if (!widget || !l) return;
-    widget.style.left = l.x + 'px';
-    widget.style.top = l.y + 'px';
+
+    const fit = clampToFree(l.x, l.y, l.w, l.h);
+    widget.style.left = fit.x + 'px';
+    widget.style.top = fit.y + 'px';
     widget.style.right = 'auto';          // todo widget is right-anchored by default
     widget.style.width = l.w + 'px';
     widget.style.height = l.h + 'px';
@@ -152,6 +183,18 @@
     drag.widget.removeEventListener('pointerup', onPointerUp);
     drag = null;
   }
+
+  // when the bar moves, every widget has to be pushed clear of it again
+  function refitAll() {
+    Object.keys(prefs.layout).forEach(applyLayout);
+  }
+
+  new MutationObserver(() => {
+    if (!document.body) return;
+    setTimeout(refitAll, 60);
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-bar'] });
+
+  window.addEventListener('resize', refitAll);
 
   window.addEventListener('message', (e) => {
     const msg = e.data;

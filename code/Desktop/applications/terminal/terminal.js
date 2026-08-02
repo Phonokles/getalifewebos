@@ -581,6 +581,18 @@ async function runFile(args) {
   const ext = extOf(name);
   const stdin = wantsInput ? await askInput() : '';
 
+  // anything the browser can run itself is done here, no server involved
+  if (window.LocalRun && window.LocalRun.handles(ext)) {
+    try {
+      const data = await window.LocalRun.run(ext, code, stdin, (msg) => printLine(msg));
+      showResult(data);
+      return;
+    } catch (e) {
+      printLine(`${ext}: ${e && e.message ? e.message : e}`, 'err');
+      printLine('falling back to the server ...');
+    }
+  }
+
   printLine(`compiling and running ${name} ...`);
 
   let data;
@@ -609,6 +621,10 @@ async function runFile(args) {
     return;
   }
 
+  showResult(data);
+}
+
+function showResult(data) {
   if (data.compile && (data.compile.stderr || data.compile.code)) {
     printLine('compiler:', 'err');
     String(data.compile.stderr || data.compile.stdout).split('\n')
@@ -646,6 +662,11 @@ if (FS && FS.consumePendingRun) {
 }
 
 COMMANDS.langs = () => {
+  if (window.LocalRun) {
+    const local = window.LocalRun.list();
+    if (local.length) printLine('runs in your browser: ' + local.join(' '));
+  }
+
   fetch(RUN_API + '?langs=1')
     .then(r => r.ok ? r.json() : null)
     .then(d => {
@@ -653,7 +674,7 @@ COMMANDS.langs = () => {
         printLine('langs: the runner is not available here', 'err');
         return;
       }
-      printLine('runnable file types:');
+      printLine('runs on the server:');
       printLine('  ' + d.langs.join(' '));
     })
     .catch(() => printLine('langs: could not reach the runner', 'err'));

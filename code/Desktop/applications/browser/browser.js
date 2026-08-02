@@ -498,8 +498,8 @@ function renderResults(list, items, query) {
     text.className = 'br-result-text';
     text.textContent = item.text;
 
-    row.appendChild(title);
     row.appendChild(link);
+    row.appendChild(title);
     if (item.text) row.appendChild(text);
 
     // a page several engines agree on is worth marking

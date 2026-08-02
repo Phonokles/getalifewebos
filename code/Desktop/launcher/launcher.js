@@ -1,5 +1,23 @@
 (function () {
 
+  // same fallback chain as the taskbar: optimised png, then the original jpg
+  const ORIGINAL = {
+    terminal: 'terminal', files: 'files', code: 'code', paint: 'draw',
+    viewer: 'imageviewer', monitor: 'monitor', calculator: 'calc', snake: 'snake',
+  };
+
+  const png = (name) => {
+    const alt = ORIGINAL[name] ? `../assets/${ORIGINAL[name]}.jpg` : '';
+    return `<img class="launcher-icon" src="../assets/icons/${name}.png" data-alt="${alt}" alt="">`;
+  };
+
+  const ICONS = {
+    terminal: 'terminal', files: 'files', code: 'code', paint: 'paint',
+    viewer: 'viewer', monitor: 'monitor', calculator: 'calculator',
+    todo: 'todo', snake: 'snake', settings: 'settings', welcome: 'welcome',
+    browser: 'browser',
+  };
+
   const APPS = [
     { name: 'terminal', keys: 'shell console cli bash', run: () => openTerminal() },
     { name: 'files', keys: 'explorer folder fm', run: () => openFiles() },
@@ -79,6 +97,7 @@
 
     prompt.textContent = cmd ? '>' : '';
     box.classList.toggle('cmd-mode', cmd);
+    box.classList.toggle('grid-mode', !cmd);
 
     results = source
       .map(e => ({ e, s: score(e, q) }))
@@ -93,12 +112,38 @@
       return;
     }
 
-    list.innerHTML = results
-      .map((e, i) => `<button class="launcher-item${i === sel ? ' selected' : ''}" data-i="${i}"></button>`)
-      .join('');
+    if (cmd) {
+      list.innerHTML = results
+        .map((e, i) => `<button class="launcher-item${i === sel ? ' selected' : ''}" data-i="${i}"></button>`)
+        .join('');
+    } else {
+      list.innerHTML = results
+        .map((e, i) => `
+          <button class="launcher-tile${i === sel ? ' selected' : ''}" data-i="${i}">
+            ${ICONS[e.name] ? png(ICONS[e.name]) : '<span class="launcher-tile-dot"></span>'}
+            <span class="launcher-tile-name"></span>
+          </button>`)
+        .join('');
+    }
 
-    list.querySelectorAll('.launcher-item').forEach((el, i) => {
-      el.textContent = results[i].name;
+    list.querySelectorAll('.launcher-tile').forEach((el, i) => {
+      el.querySelector('.launcher-tile-name').textContent = results[i].name;
+      const img = el.querySelector('img');
+      if (img) img.addEventListener('error', () => {
+        if (img.dataset.alt) {
+          const next = img.dataset.alt;
+          img.dataset.alt = '';
+          img.src = next;
+          return;
+        }
+        const dot = document.createElement('span');
+        dot.className = 'launcher-tile-dot';
+        img.replaceWith(dot);
+      });
+    });
+
+    list.querySelectorAll('.launcher-item, .launcher-tile').forEach((el, i) => {
+      if (el.classList.contains('launcher-item')) el.textContent = results[i].name;
       el.addEventListener('click', () => run(i));
       el.addEventListener('mousemove', () => {
         if (sel === i) return;
@@ -109,7 +154,7 @@
   }
 
   function highlight() {
-    list.querySelectorAll('.launcher-item').forEach((el, i) => {
+    list.querySelectorAll('.launcher-item, .launcher-tile').forEach((el, i) => {
       el.classList.toggle('selected', i === sel);
     });
     list.children[sel]?.scrollIntoView?.({ block: 'nearest' });

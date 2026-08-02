@@ -2,28 +2,44 @@
   position: fixed;
   min-width: 360px;
   min-height: 280px;
-  background: rgb(var(--bg-rgb-soft));
-  border: 1px solid rgba(var(--fg-rgb), 0.1);
-  border-radius: 10px;
+  background: rgba(var(--bg-rgb-soft), var(--win-alpha, 0.88));
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-lg);
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s;
+  transition: box-shadow var(--slow) var(--ease), border-color var(--slow) var(--ease);
+}
+
+/* a hairline of light along the top edge, the way real surfaces catch it */
+.app-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent, rgba(var(--fg-rgb), 0.14), transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 @keyframes win-open {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes win-close {
   from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 0; transform: scale(0.96) translateY(4px); }
 }
 
 .app-window.win-open-anim {
-  animation: win-open 0.16s cubic-bezier(.34, 1.4, .64, 1);
+  animation: win-open var(--slow) var(--ease);
 }
 
 /* nach win-open-anim, damit es beim schliessen die animation ueberschreibt */
@@ -70,9 +86,11 @@
 }
 
 .window-titlebar {
-  height: 27px;
-  background: rgb(var(--bg-rgb-softer));
-  border-bottom: 1px solid rgba(var(--fg-rgb), 0.07);
+  height: 32px;
+  background: linear-gradient(to bottom,
+    rgba(var(--fg-rgb), 0.035), rgba(var(--fg-rgb), 0.012)),
+    rgb(var(--bg-rgb-softer));
+  border-bottom: 1px solid var(--edge);
   display: flex;
   align-items: center;
   padding: 0 9px;
@@ -87,18 +105,20 @@
 }
 
 .window-btn {
-  width: 17px;
-  height: 17px;
-  border-radius: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
   border: none;
-  background: rgba(var(--fg-rgb), 0.06);
+  background: rgba(var(--fg-rgb), 0.07);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  color: rgba(var(--fg-rgb), 0.4);
-  transition: color 0.2s, background 0.2s, transform 0.15s;
+  color: rgba(var(--fg-rgb), 0.35);
+  transition: color var(--fast) var(--ease),
+              background var(--fast) var(--ease),
+              transform var(--fast) var(--ease);
 }
 
 .window-btn svg {
@@ -149,7 +169,8 @@
   width: 100%;
   height: 100%;
   border: none;
-  background: rgb(var(--bg-rgb));
+  /* transparent, so the blur of the window shows through the app */
+  background: transparent;
   display: block;
 }
 
@@ -173,11 +194,19 @@
 .app-window.tiled {
   min-width: 0;
   min-height: 0;
-  transition: left 0.22s ease, top 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.2s;
+  transition: left var(--slow) var(--ease), top var(--slow) var(--ease),
+              width var(--slow) var(--ease), height var(--slow) var(--ease),
+              box-shadow var(--slow) var(--ease);
 }
 
-.wm-tiled .app-window.wm-focused {
-  border-color: rgba(var(--fg-rgb), 0.55);
+.app-window.wm-focused {
+  border-color: var(--edge-strong);
+  box-shadow: var(--lift-lg), 0 0 0 1px rgba(var(--fg-rgb), 0.06);
+}
+
+/* unfocused windows sink back a little */
+.app-window:not(.wm-focused) {
+  box-shadow: var(--lift-md);
 }
 
 .wm-tiled .resize-handle {
@@ -196,11 +225,330 @@
 .snap-preview {
   display: none;
   position: fixed;
-  border: 1.5px dashed rgba(var(--fg-rgb), 0.5);
-  border-radius: 10px;
-  background: rgba(var(--fg-rgb), 0.06);
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  border-radius: var(--r-lg);
+  background: rgba(var(--fg-rgb), 0.05);
+  box-shadow: inset 0 0 40px rgba(var(--fg-rgb), 0.04);
   pointer-events: none;
   z-index: 20000;
+  transition: all var(--fast) var(--ease);
+}
+.win-bar {
+  position: fixed;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(var(--fg-rgb));
+  opacity: 0.5;
+  z-index: 999999;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(var(--fg-rgb), 0.55);
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.2s ease;
+}
+
+.win-bar.gone {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.win-corners {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0;
+  color: rgb(var(--fg-rgb));
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              height 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.18s ease;
+}
+
+.win-corners.spread {
+  transition: left 0.3s cubic-bezier(.22, 1, .3, 1),
+              top 0.3s cubic-bezier(.22, 1, .3, 1),
+              width 0.3s cubic-bezier(.22, 1, .3, 1),
+              height 0.3s cubic-bezier(.22, 1, .3, 1),
+              opacity 0.2s ease;
+}
+
+.win-corners .c {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 2px solid currentColor;
+  filter: drop-shadow(0 0 10px rgba(var(--fg-rgb), 0.5));
+  transition: width 0.3s cubic-bezier(.22, 1, .3, 1),
+              height 0.3s cubic-bezier(.22, 1, .3, 1);
+}
+
+.win-corners.spread .c {
+  width: 30px;
+  height: 30px;
+}
+
+.win-corners .tl {
+  top: 0; left: 0;
+  border-right: none; border-bottom: none;
+  border-top-left-radius: 4px;
+}
+
+.win-corners .tr {
+  top: 0; right: 0;
+  border-left: none; border-bottom: none;
+  border-top-right-radius: 4px;
+}
+
+.win-corners .bl {
+  bottom: 0; left: 0;
+  border-right: none; border-top: none;
+  border-bottom-left-radius: 4px;
+}
+
+.win-corners .br {
+  bottom: 0; right: 0;
+  border-left: none; border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+.win-corners.gone {
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}.app-window {
+  position: fixed;
+  min-width: 360px;
+  min-height: 280px;
+  background: rgba(var(--bg-rgb-soft), var(--win-alpha, 0.88));
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--lift-lg);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow var(--slow) var(--ease), border-color var(--slow) var(--ease);
+}
+
+/* a hairline of light along the top edge, the way real surfaces catch it */
+.app-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent, rgba(var(--fg-rgb), 0.14), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes win-open {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes win-close {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.96) translateY(4px); }
+}
+
+.app-window.win-open-anim {
+  animation: win-open var(--slow) var(--ease);
+}
+
+/* nach win-open-anim, damit es beim schliessen die animation ueberschreibt */
+.app-window.win-closing {
+  animation: win-close 0.17s ease forwards;
+  pointer-events: none;
+}
+
+.win-cross {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0.55;
+  color: rgb(var(--fg-rgb));
+  transition: left 0.26s cubic-bezier(.3, 0, .2, 1),
+              top 0.26s cubic-bezier(.3, 0, .2, 1),
+              width 0.26s cubic-bezier(.3, 0, .2, 1),
+              height 0.26s cubic-bezier(.3, 0, .2, 1),
+              opacity 0.2s ease;
+  filter: drop-shadow(0 0 22px rgba(var(--fg-rgb), 0.22));
+}
+
+.win-cross svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* keeps the stroke in screen pixels, so growing does not fatten the line */
+.win-cross svg path {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 2;
+  transition: stroke-width 0.26s cubic-bezier(.3, 0, .2, 1);
+}
+
+.win-cross.grown svg path {
+  stroke-width: 1;
+}
+
+.win-cross.gone {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.window-titlebar {
+  height: 32px;
+  background: linear-gradient(to bottom,
+    rgba(var(--fg-rgb), 0.05), rgba(var(--fg-rgb), 0.02));
+  border-bottom: 1px solid var(--edge);
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  cursor: move;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.window-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.window-btn {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(var(--fg-rgb), 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: rgba(var(--fg-rgb), 0.35);
+  transition: color var(--fast) var(--ease),
+              background var(--fast) var(--ease),
+              transform var(--fast) var(--ease);
+}
+
+.window-btn svg {
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+}
+
+.window-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(var(--fg-rgb), 0.14);
+  color: rgb(var(--fg-rgb));
+}
+
+.window-btn:active {
+  transform: translateY(0) scale(0.9);
+}
+
+.window-btn.close svg {
+  transition: transform 0.3s cubic-bezier(.34, 1.56, .64, 1);
+}
+.window-btn.close:hover svg {
+  transform: rotate(90deg);
+}
+
+.window-btn.minimize svg {
+  transition: transform 0.25s ease;
+}
+.window-btn.minimize:hover svg {
+  transform: scaleX(1.4);
+}
+
+.window-btn.fullscreen svg {
+  transition: transform 0.25s ease;
+}
+.window-btn.fullscreen:hover svg {
+  transform: scale(1.2);
+}
+
+
+.window-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.window-content iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  /* transparent, so the blur of the window shows through the app */
+  background: transparent;
+  display: block;
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 10;
+}
+
+.resize-n  { top: 0;    left: 8px;    right: 8px;   height: 4px; cursor: n-resize; }
+.resize-s  { bottom: 0; left: 8px;    right: 8px;   height: 4px; cursor: s-resize; }
+.resize-e  { right: 0;  top: 8px;     bottom: 8px;  width: 4px;  cursor: e-resize; }
+.resize-w  { left: 0;   top: 8px;     bottom: 8px;  width: 4px;  cursor: w-resize; }
+.resize-ne { top: 0;    right: 0;     width: 10px;  height: 10px; cursor: ne-resize; }
+.resize-nw { top: 0;    left: 0;      width: 10px;  height: 10px; cursor: nw-resize; }
+.resize-se { bottom: 0; right: 0;     width: 10px;  height: 10px; cursor: se-resize; }
+.resize-sw { bottom: 0; left: 0;      width: 10px;  height: 10px; cursor: sw-resize; }
+
+
+
+
+.app-window.tiled {
+  min-width: 0;
+  min-height: 0;
+  transition: left var(--slow) var(--ease), top var(--slow) var(--ease),
+              width var(--slow) var(--ease), height var(--slow) var(--ease),
+              box-shadow var(--slow) var(--ease);
+}
+
+.app-window.wm-focused {
+  border-color: var(--edge-strong);
+  box-shadow: var(--lift-lg), 0 0 0 1px rgba(var(--fg-rgb), 0.06);
+}
+
+/* unfocused windows sink back a little */
+.app-window:not(.wm-focused) {
+  box-shadow: var(--lift-md);
+}
+
+.wm-tiled .resize-handle {
+  display: none;
+}
+
+.wm-tiled .window-titlebar {
+  cursor: default;
+}
+
+.app-window.is-fullscreen {
+  border-radius: 0;
+  border-color: transparent;
+}
+
+.snap-preview {
+  display: none;
+  position: fixed;
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  border-radius: var(--r-lg);
+  background: rgba(var(--fg-rgb), 0.05);
+  box-shadow: inset 0 0 40px rgba(var(--fg-rgb), 0.04);
+  pointer-events: none;
+  z-index: 20000;
+  transition: all var(--fast) var(--ease);
 }
 .win-bar {
   position: fixed;

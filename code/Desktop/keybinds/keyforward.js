@@ -1,26 +1,16 @@
-// laeuft in jedem app-iframe. tastendruecke im iframe erreichen den desktop
-// nicht von selbst, also werden hier zwei dinge nach oben geschickt:
-//   1. alt antippen  -> launcher
-//   2. alt/meta-kombis -> keybind (der desktop entscheidet ob es passt)
-// bewusst NICHT weitergeleitet: reines strg+taste (z.B. ^S/^X in nano) und
-// AltGr (schreibt @ { } [ ] €) - die bleiben in der app.
+// runs inside every app iframe. keypresses there never reach the desktop,
+// so mod combos and alt taps get posted up. plain ctrl+key stays in the app
+// so nano keeps ^S, and AltGr stays so it can still type @ { } [ ]
 (function () {
   const MOD_KEYS = ['Alt', 'Control', 'Meta', 'Shift', 'AltGraph'];
   let altArmed = false;
 
   window.addEventListener('keydown', (e) => {
-    // alt-tap scharf machen / entschaerfen
-    if (e.key === 'Alt' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat) {
-      altArmed = true;
-    } else {
-      altArmed = false;
-    }
+    altArmed = e.key === 'Alt' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.repeat;
 
     const altGraph = typeof e.getModifierState === 'function' && e.getModifierState('AltGraph');
-    const isModKey = MOD_KEYS.includes(e.key);
 
-    // nur alt/meta-kombis (decken strg+alt, alt und super ab), kein AltGr
-    if (!isModKey && (e.altKey || e.metaKey) && !altGraph) {
+    if (!MOD_KEYS.includes(e.key) && (e.altKey || e.metaKey) && !altGraph) {
       window.parent.postMessage({
         type: 'keybind',
         key: e.key,
@@ -45,3 +35,10 @@
 
   window.addEventListener('blur', () => { altArmed = false; });
 })();
+
+// the desktop pushes the window transparency here, because css variables do
+// not cross an iframe boundary
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'setWinAlpha') return;
+  document.documentElement.style.setProperty('--win-alpha', String(e.data.alpha));
+});

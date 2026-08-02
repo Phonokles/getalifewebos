@@ -54,6 +54,28 @@ function renderBreadcrumb() {
 }
 
 
+const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const ICON_RUN = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg>';
+
+let query = '';
+
+function searchAll(q) {
+  const needle = q.toLowerCase();
+  const found = [];
+
+  (function walk(path) {
+    FS.list(path).forEach(item => {
+      const full = path ? path + '/' + item.name : item.name;
+      if (item.name.toLowerCase().includes(needle)) {
+        found.push({ ...item, where: path });
+      }
+      if (item.type === 'folder') walk(full);
+    });
+  })('');
+
+  return found.slice(0, 60);
+}
+
 function renderList() {
   bodyEl.innerHTML = '';
 
@@ -62,10 +84,13 @@ function renderList() {
     return;
   }
 
-  const items = FS.list(currentPath);
+  // searching looks through every folder, not just the one you are standing in
+  const items = query ? searchAll(query) : FS.list(currentPath);
 
   if (!items.length) {
-    bodyEl.innerHTML = '<div class="files-empty">nothing here yet</div>';
+    bodyEl.innerHTML = query
+      ? '<div class="files-empty">nothing matches "' + query + '" [-_-]</div>'
+      : '<div class="files-empty">nothing here yet</div>';
     return;
   }
 
@@ -75,31 +100,48 @@ function renderList() {
     const isPage = item.type === 'file' && FS.isPage && FS.isPage(item.name);
     const isCode = item.type === 'file' && FS.isRunnable && FS.isRunnable(item.name);
     const runnable = isPage || isCode;
+    const editable = item.type === 'file' && !FS.isImage(item.name);
 
     row.innerHTML = `
       ${item.type === 'folder' ? ICON_FOLDER : ICON_FILE}
       <span class="files-item-name"></span>
-      ${runnable ? `<span class="files-item-run" title="${isPage ? 'Open in the browser' : 'Run in the terminal'}">&#9654;</span>` : ''}
-      <span class="files-item-del" title="Delete">${ICON_DEL}</span>
+      <span class="files-item-tools">
+        ${editable ? '<span class="files-item-act files-item-edit" title="Edit in the code app">' + ICON_EDIT + '</span>' : ''}
+        ${runnable ? `<span class="files-item-act files-item-run" title="${isPage ? 'Open in the browser' : 'Run in the terminal'}">` + ICON_RUN + '</span>' : ''}
+        <span class="files-item-act files-item-del" title="Delete">${ICON_DEL}</span>
+      </span>
     `;
     // textContent so weird characters in names can't break the markup
     row.querySelector('.files-item-name').textContent = item.name;
 
+    if (item.where !== undefined) {
+      const where = document.createElement('span');
+      where.className = 'files-item-where';
+      where.textContent = item.where || 'home';
+      row.querySelector('.files-item-name').after(where);
+    }
+
+    const base = item.where !== undefined ? item.where : currentPath;
+
     row.addEventListener('click', (e) => {
       if (e.target.closest('.files-item-del')) {
-        FS.remove(joinPath(currentPath, item.name));
+        FS.remove(joinPath(base, item.name));
+        return;
+      }
+      if (e.target.closest('.files-item-edit')) {
+        FS.requestOpenInEditor(joinPath(base, item.name));
         return;
       }
       if (e.target.closest('.files-item-run')) {
-        const full = joinPath(currentPath, item.name);
+        const full = joinPath(base, item.name);
         if (isPage) FS.requestOpenInBrowser(full);
         else FS.requestRun(full);
         return;
       }
       if (item.type === 'folder') {
-        navigate(joinPath(currentPath, item.name));
+        navigate(joinPath(base, item.name));
       } else {
-        FS.requestOpen(joinPath(currentPath, item.name));
+        FS.requestOpen(joinPath(base, item.name));
       }
     });
 
@@ -107,8 +149,43 @@ function renderList() {
   });
 }
 
+const searchInput = document.getElementById('files-search');
+const searchClear = document.getElementById('files-search-clear');
+
+function paintSearch() {
+  searchClear.style.display = query ? '' : 'none';
+  document.querySelector('.files-search-row').classList.toggle('active', !!query);
+}
+
+searchInput.addEventListener('input', () => {
+  query = searchInput.value.trim();
+  paintSearch();
+  renderList();
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  searchInput.value = '';
+  query = '';
+  paintSearch();
+  renderList();
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  query = '';
+  paintSearch();
+  renderList();
+  searchInput.focus();
+});
+
+paintSearch();
+
 function navigate(path) {
   currentPath = path;
+  query = '';
+  if (searchInput) searchInput.value = '';
+  paintSearch();
   closeCreate();
   renderBreadcrumb();
   renderList();

@@ -132,6 +132,17 @@ function handleTodoAction(id, action) {
   renderTodos();
 }
 
+let newKind = 'check';
+
+function paintKind() {
+  const btn = document.getElementById('todo-kind');
+  const target = document.getElementById('todo-target');
+  if (!btn) return;
+  btn.textContent = newKind;
+  btn.classList.toggle('counter', newKind === 'counter');
+  if (target) target.style.display = newKind === 'counter' ? '' : 'none';
+}
+
 function addCustomTodo() {
   const input = document.getElementById('todo-new-input');
   const text = input.value.trim();
@@ -143,18 +154,30 @@ function addCustomTodo() {
     todoState.push(customSection);
   }
 
-  customSection.items.push({
-    id: 'c-' + Date.now(),
-    text,
-    type: 'check',
-    done: false
-  });
+  const targetEl = document.getElementById('todo-target');
+  const target = Math.max(1, Math.min(99, parseInt(targetEl?.value, 10) || 3));
+
+  customSection.items.push(newKind === 'counter'
+    ? { id: 'c-' + Date.now(), text, type: 'counter', target, count: 0 }
+    : { id: 'c-' + Date.now(), text, type: 'check', done: false });
 
   input.value = '';
   renderTodos();
 }
 
 document.getElementById('todo-add-btn').addEventListener('click', addCustomTodo);
+
+// let people build their own counters, not just check items
+document.getElementById('todo-kind')?.addEventListener('click', () => {
+  newKind = newKind === 'check' ? 'counter' : 'check';
+  paintKind();
+});
+
+document.getElementById('todo-new-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addCustomTodo();
+});
+
+paintKind();
 document.getElementById('todo-new-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addCustomTodo();
 });

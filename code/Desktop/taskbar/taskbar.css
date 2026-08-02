@@ -15,6 +15,7 @@
   bottom: 100%;
   left: 0;
   margin-bottom: -8px;
+  transition: margin-bottom var(--slow, 0.26s) var(--ease, ease);
   width: 64px;
   height: 64px;
   pointer-events: auto;
@@ -113,4 +114,17 @@
     opacity: 0;
     transform: translate(calc(-50% + var(--drift, 0px)), -46px) scale(0.85);
   }
+}
+
+
+/* with the bar anywhere but the bottom the pets are moved onto the body, so
+   they walk along the real screen floor instead of inside the bar */
+body[data-bar="top"] > .fox-wrapper,
+body[data-bar="left"] > .fox-wrapper,
+body[data-bar="right"] > .fox-wrapper {
+  position: fixed;
+  bottom: 0;
+  top: auto;
+  margin-bottom: 0;
+  z-index: 99;
 }
