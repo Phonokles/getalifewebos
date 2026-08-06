@@ -20,7 +20,10 @@ const STRIP = [
 // and download links are reported so the os can save them to its filesystem
 const HOOK = `<script>
 (function () {
-  var DL = /\\.(pdf|zip|rar|7z|tar|gz|tgz|docx?|xlsx?|pptx?|csv|odt|rtf|mp3|wav|flac|ogg|m4a|mp4|webm|mkv|mov|apk|exe|dmg|iso|epub|mobi|bin)(\\?|$)/i;
+  // a link is a download if it is marked download or points at a file (any
+  // extension) that is not itself a web page
+  var NAV = /\\.(html?|xhtml|php|aspx?|jsp|jspx|cgi|do|action)(\\?|#|$)/i;
+  var FILE = /\\/[^\\/?#]+\\.[a-z0-9]{1,6}(\\?|#|$)/i;
   function tell(url) {
     try { parent.postMessage({ type: 'proxyNav', url: url }, '*'); } catch (e) {}
   }
@@ -29,9 +32,11 @@ const HOOK = `<script>
     if (!a) return;
     var href = a.getAttribute('href') || '';
     if (href.startsWith('javascript:') || href.startsWith('#')) return;
+    var abs;
+    try { abs = new URL(href, document.baseURI).href; } catch (err) { return; }
     e.preventDefault();
-    var abs = new URL(href, document.baseURI).href;
-    if (a.hasAttribute('download') || DL.test(abs)) {
+    var isDownload = a.hasAttribute('download') || (FILE.test(abs) && !NAV.test(abs));
+    if (isDownload) {
       try { parent.postMessage({ type: 'proxyDownload', url: abs, name: a.getAttribute('download') || '' }, '*'); } catch (e) {}
     } else {
       tell(abs);
