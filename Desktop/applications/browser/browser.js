@@ -755,9 +755,11 @@ function renderResults(list, items, query) {
 
 // ---------- image search ----------
 
-// image search rides the same server side endpoint as web search, which avoids
-// the cors and rate limits that killed the old browser side call
-const IMAGE_API = '/api/search?type=images&q=';
+// image search runs straight from the browser against wikimedia commons, whose
+// api allows cross origin requests when you pass origin=*. no server, no deploy,
+// no cache to get in the way. the deployed search api is only a fallback
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
+  + '&prop=imageinfo&iiprop=url&iiurlwidth=400&generator=search&gsrnamespace=6&gsrlimit=48&gsrsearch=';
 
 function safeName(title, url) {
   let base = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -788,11 +790,11 @@ function buildImages(query) {
 
   fetchImages(query)
     .then(data => {
-      if (data.note && !data.items.length) {
+      if (!data.items.length) {
         grid.innerHTML = '';
         const note = document.createElement('div');
         note.className = 'br-results-note';
-        note.textContent = data.note === 'server' ? 'image search only works on the deployed site.' : 'no images found for that [-_-]';
+        note.textContent = 'no images found for that [-_-]';
         grid.appendChild(note);
         return;
       }
@@ -809,26 +811,56 @@ function buildImages(query) {
   return box;
 }
 
+async function commonsImages(query) {
+  const res = await fetch(COMMONS_API + encodeURIComponent(query));
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const pages = (data && data.query && data.query.pages) || {};
+
+  return Object.keys(pages)
+    .map(k => pages[k])
+    .sort((a, b) => (a.index || 0) - (b.index || 0))
+    .map(p => {
+      const info = (p.imageinfo || [])[0] || {};
+      const name = (p.title || '').replace(/^File:/, '');
+      return {
+        thumb: info.thumburl || info.url,
+        full: info.url,
+        title: name.replace(/\.[^.]+$/, ''),
+        source: info.descriptionurl || info.url,
+        creator: '',
+        license: '',
+        filename: safeName(name, info.url),
+      };
+    })
+    .filter(x => x.full && /\.(jpe?g|png|gif|webp|svg)$/i.test(x.full));
+}
+
 async function fetchImages(query) {
   if (typeof fetch !== 'function') return { items: [], note: 'this browser has no fetch' };
 
-  let res;
-  try { res = await fetch(IMAGE_API + encodeURIComponent(query)); }
-  catch (e) { return { items: [], note: 'server' }; }
-  if (!res.ok) return { items: [], note: 'server' };
+  // primary: wikimedia commons, works with no server
+  try {
+    const items = await commonsImages(query);
+    if (items.length) return { items, note: null };
+  } catch (e) { /* fall through to the server */ }
 
-  const data = await res.json();
-  const items = (data.images || []).map(r => ({
-    thumb: r.thumb || r.full,
-    full: r.full,
-    title: r.title || 'image',
-    source: r.source || r.full,
-    creator: '',
-    license: '',
-    filename: safeName(r.title, r.full),
-  })).filter(x => x.full);
+  // fallback: the deployed search api (duckduckgo etc.)
+  try {
+    const res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query));
+    if (res.ok) {
+      const data = await res.json();
+      const items = (data.images || []).map(r => ({
+        thumb: r.thumb || r.full, full: r.full, title: r.title || 'image',
+        source: r.source || r.full, creator: '', license: '',
+        filename: safeName(r.title, r.full),
+      })).filter(x => x.full);
+      if (items.length) return { items, note: null };
+    }
+  } catch (e) { /* offline or not deployed */ }
 
-  return { items, note: items.length ? null : 'nothing found' };
+  return { items: [], note: 'nothing found' };
 }
 
 function renderImages(grid, items) {
