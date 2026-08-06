@@ -747,3 +747,36 @@ html, body {
 .br-lightbox-close:hover {
   background: rgba(0, 0, 0, 0.85);
 }
+
+
+/* ---------- download toast ---------- */
+
+.br-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translate(-50%, 20px);
+  z-index: 50;
+  max-width: 80%;
+  padding: 9px 16px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
+  background: rgba(var(--bg-rgb-softer), 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgb(var(--fg-rgb));
+  font-size: 0.74rem;
+  letter-spacing: 0.3px;
+  box-shadow: var(--lift-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.br-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

@@ -414,3 +414,8 @@ setupKeybindsPanel();
 setupSystemPanel();
 setupBarPanel();
 setupAlphaSlider('win-alpha', 'win-alpha-value', 'winAlpha', 'setWinAlpha', 0.88);
+
+
+
+
+

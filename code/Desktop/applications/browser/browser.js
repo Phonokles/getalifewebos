@@ -15,33 +15,122 @@ const FILE = 'file:';
 
 const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
 
-// injected first in every local page: keeps its links and any script driven
-// navigation inside the os instead of hitting the real server
-const FILE_HOOK = `<script>
+// the hook injected into every local page. it is parametrized with the page's
+// own filesystem path (base) so it can resolve relative urls. it provides:
+//   - an in-memory localStorage so sandboxed scripts do not crash
+//   - a location proxy so script redirects stay in the os (see rewriteNav)
+//   - anchor click interception
+//   - runtime virtualization: iframes and images created by scripts get their
+//     content pulled from the filesystem via the parent, and a relay so nested
+//     app frames (which can only postMessage one level up) reach the browser
+function fileHook(base) {
+  return `<script>
 (function () {
-  function nav(u) { try { parent.postMessage({ type: 'fileNav', href: String(u) }, '*'); } catch (e) {} }
+  var BASE = ${JSON.stringify(base)};
 
-  // window.location = '...' , location.assign() and location.replace() can be
-  // trapped. location.href = '...' cannot, browsers keep that one read only
   try {
-    var real = window.location;
-    Object.defineProperty(window, 'location', {
-      configurable: true, get: function () { return real; }, set: function (u) { nav(u); },
-    });
+    var _ls = {};
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: {
+      getItem: function (k) { return k in _ls ? _ls[k] : null; },
+      setItem: function (k, v) { _ls[k] = String(v); },
+      removeItem: function (k) { delete _ls[k]; }, clear: function () { _ls = {}; },
+      key: function (i) { return Object.keys(_ls)[i] || null; },
+      get length() { return Object.keys(_ls).length; } } });
   } catch (e) {}
-  try { window.location.assign = nav; } catch (e) {}
-  try { window.location.replace = nav; } catch (e) {}
+
+  function osnav(u) { try { parent.postMessage({ type: 'fileNav', href: String(u) }, '*'); } catch (e) {} }
+  window.__osnav = osnav;
+
+  var real; try { real = window.location; } catch (e) { real = {}; }
+  var proxy = new Proxy({}, {
+    get: function (t, k) { if (k === 'assign' || k === 'replace') return osnav; var v; try { v = real[k]; } catch (e) {} return typeof v === 'function' ? v.bind(real) : v; },
+    set: function (t, k, val) { if (k === 'href') { osnav(val); return true; } try { real[k] = val; } catch (e) {} return true; }
+  });
+  try { Object.defineProperty(window, '__osLocation', { configurable: true, get: function () { return proxy; }, set: function (v) { osnav(v); } }); }
+  catch (e) { window.__osLocation = proxy; }
+
+  function resolve(ref) {
+    var parts = BASE.split('/').slice(0, -1);
+    ref.split('/').forEach(function (p) { if (!p || p === '.') return; if (p === '..') parts.pop(); else parts.push(p); });
+    return parts.join('/');
+  }
+  function isAbs(u) { return !u || /^(https?:|data:|blob:|about:|#|javascript:)/i.test(u); }
+
+  var seq = 0, reqs = {}, relay = {};
+  function request(path, cb) { var id = 'q' + (++seq); reqs[id] = cb; try { parent.postMessage({ type: 'fsResolve', reqId: id, path: path }, '*'); } catch (e) {} }
+
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (!d) return;
+    // a child frame is asking for a file: forward up, remembering who to answer
+    if (d.type === 'fsResolve' && d.reqId != null && e.source && e.source !== window) {
+      var mid = 'r' + (++seq); relay[mid] = { win: e.source, id: d.reqId };
+      try { parent.postMessage({ type: 'fsResolve', reqId: mid, path: d.path }, '*'); } catch (err) {}
+      return;
+    }
+    if (d.type === 'fsResolved' && d.reqId != null) {
+      if (reqs[d.reqId]) { var cb = reqs[d.reqId]; delete reqs[d.reqId]; cb(d); return; }
+      if (relay[d.reqId]) { var t = relay[d.reqId]; delete relay[d.reqId];
+        try { t.win.postMessage({ type: 'fsResolved', reqId: t.id, exists: d.exists, isImage: d.isImage, content: d.content }, '*'); } catch (err) {}
+      }
+    }
+  });
+
+  function fixIframe(f) {
+    if (f.__os) return; var s = f.getAttribute('src') || ''; if (isAbs(s)) return;
+    f.__os = 1; f.removeAttribute('src');
+    request(resolve(s), function (r) {
+      if (!r.exists) { f.srcdoc = '<!doctype html><body style="font:12px monospace;color:#888;padding:16px">not in filesystem</body>'; return; }
+      f.srcdoc = r.isImage
+        ? '<!doctype html><body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#111"><img style="max-width:100%;max-height:100%" src="' + r.content + '"></body>'
+        : r.content;
+    });
+  }
+  function fixImg(im) {
+    if (im.__os) return; var s = im.getAttribute('src') || ''; if (isAbs(s)) return;
+    im.__os = 1;
+    request(resolve(s), function (r) { if (r.exists && r.isImage) im.src = r.content; });
+  }
+  function scan(root) {
+    if (root.querySelectorAll) { [].forEach.call(root.querySelectorAll('iframe'), fixIframe); [].forEach.call(root.querySelectorAll('img'), fixImg); }
+    if (root.tagName === 'IFRAME') fixIframe(root);
+    if (root.tagName === 'IMG') fixImg(root);
+  }
+
+  try {
+    var mo = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.addedNodes) [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) scan(n); });
+        if (m.type === 'attributes' && m.target.nodeType === 1) {
+          if (m.target.tagName === 'IFRAME') fixIframe(m.target);
+          else if (m.target.tagName === 'IMG') fixImg(m.target);
+        }
+      });
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  } catch (e) {}
+  if (document.readyState !== 'loading') scan(document);
+  else document.addEventListener('DOMContentLoaded', function () { scan(document); });
 
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href]');
-    if (!a) return;
-    var href = a.getAttribute('href') || '';
+    if (!a) return; var href = a.getAttribute('href') || '';
     if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
-    e.preventDefault();
-    nav(href);
+    e.preventDefault(); osnav(href);
   }, true);
 }());
 <\/script>`;
+}
+
+// rewrites just the navigation writes in a page's own script so they route
+// through the proxy. only assignment and assign()/replace() are touched, so
+// reads like location.pathname and the word "location" in strings stay intact
+function rewriteNav(code) {
+  return code
+    .replace(/\b(?:window\s*\.\s*|self\s*\.\s*|document\s*\.\s*)?location\s*\.\s*href\s*=(?!=)/g, 'window.__osLocation.href =')
+    .replace(/\b(?:window\s*\.\s*|self\s*\.\s*|document\s*\.\s*)?location\s*\.\s*(?:assign|replace)\s*\(/g, 'window.__osnav(')
+    .replace(/\b(?:window|self)\s*\.\s*location\s*=(?!=)/g, 'window.__osLocation =')
+    .replace(/(^|[^.\w$])location\s*=(?!=)/g, '$1window.__osLocation =');
+}
 
 function resolveFile(base, href) {
   if (/^https?:/i.test(href)) return href;
@@ -93,54 +182,88 @@ function fsRedirectTarget(path) {
   return current;
 }
 
+// turns relative url(...) refs inside css into data urls from the filesystem,
+// so backgrounds and fonts stored locally actually show
+function inlineCssUrls(css, cssPath) {
+  return String(css).replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (m, q, ref) => {
+    if (/^(https?:|data:|blob:|#)/i.test(ref)) return m;
+    const p = resolveFsPath(cssPath, ref);
+    if (FS.exists(p)) {
+      const data = FS.readFile(p) || '';
+      if (data.indexOf('data:') === 0) return 'url(' + data + ')';
+    }
+    return m;
+  });
+}
+
 // pulls a local page's own css, js and images out of the filesystem and inlines
-// them, since relative urls in a srcdoc frame would point at the real server
+// them, since relative urls in a srcdoc frame would point at the real server.
+// the whole thing is best effort: on any trouble the raw page still gets the
+// hook so its links keep working
 function assembleFsPage(path, content) {
-  let doc;
-  try { doc = new DOMParser().parseFromString(content, 'text/html'); }
-  catch (e) { return content + FILE_HOOK; }
+  try {
+    const doc = new DOMParser().parseFromString(content, 'text/html');
 
-  const local = (value) => {
-    if (!value || /^(https?:|data:|blob:|#|javascript:|mailto:)/i.test(value)) return null;
-    const p = resolveFsPath(path, value);
-    return FS.exists(p) ? p : null;
-  };
+    const local = (value) => {
+      if (!value || /^(https?:|data:|blob:|#|javascript:|mailto:)/i.test(value)) return null;
+      const p = resolveFsPath(path, value);
+      return FS.exists(p) ? p : null;
+    };
 
-  doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(link => {
-    const p = local(link.getAttribute('href'));
-    if (!p) return;
-    const style = doc.createElement('style');
-    style.textContent = FS.readFile(p) || '';
-    link.replaceWith(style);
-  });
+    // existing <style> blocks: resolve url() against the page's folder
+    doc.querySelectorAll('style').forEach(st => {
+      if (st.textContent) st.textContent = inlineCssUrls(st.textContent, path);
+    });
 
-  doc.querySelectorAll('script[src]').forEach(s => {
-    const p = local(s.getAttribute('src'));
-    if (!p) return;
-    const ns = doc.createElement('script');
-    [...s.attributes].forEach(a => { if (a.name !== 'src') ns.setAttribute(a.name, a.value); });
-    ns.textContent = FS.readFile(p) || '';
-    s.replaceWith(ns);
-  });
+    // linked stylesheets: inline them and resolve their url() against the css folder
+    doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(link => {
+      const p = local(link.getAttribute('href'));
+      if (!p) return;
+      const style = doc.createElement('style');
+      style.textContent = inlineCssUrls(FS.readFile(p) || '', p);
+      link.replaceWith(style);
+    });
 
-  doc.querySelectorAll('img[src], source[src], audio[src], video[src]').forEach(el => {
-    const p = local(el.getAttribute('src'));
-    if (!p) return;
-    const data = FS.readFile(p) || '';
-    if (data.startsWith('data:')) el.setAttribute('src', data);
-  });
+    doc.querySelectorAll('script[src]').forEach(s => {
+      const p = local(s.getAttribute('src'));
+      if (!p) return;
+      const ns = doc.createElement('script');
+      [...s.attributes].forEach(a => { if (a.name !== 'src') ns.setAttribute(a.name, a.value); });
+      ns.textContent = FS.readFile(p) || '';
+      s.replaceWith(ns);
+    });
 
-  // a <base> or leftover meta refresh would send everything back to the server
-  doc.querySelectorAll('base').forEach(b => b.remove());
-  doc.querySelectorAll('meta[http-equiv]').forEach(m => {
-    if (/refresh/i.test(m.getAttribute('http-equiv') || '')) m.remove();
-  });
+    // route script redirects (window.location.href = ...) back into the os.
+    // this also covers the scripts just inlined above, which now have no src
+    doc.querySelectorAll('script:not([src])').forEach(s => {
+      if (s.textContent && s.textContent.indexOf('location') !== -1) {
+        s.textContent = rewriteNav(s.textContent);
+      }
+    });
 
-  // the hook must run before the page's own scripts, so it goes first in head
-  const head = doc.head || doc.documentElement;
-  head.insertAdjacentHTML('afterbegin', FILE_HOOK);
+    doc.querySelectorAll('img[src], source[src], audio[src], video[src]').forEach(el => {
+      const p = local(el.getAttribute('src'));
+      if (!p) return;
+      const data = FS.readFile(p) || '';
+      if (data.startsWith('data:')) el.setAttribute('src', data);
+    });
 
-  return '<!doctype html>' + doc.documentElement.outerHTML;
+    // a <base> or leftover meta refresh would send everything back to the server
+    doc.querySelectorAll('base').forEach(b => b.remove());
+    doc.querySelectorAll('meta[http-equiv]').forEach(m => {
+      if (/refresh/i.test(m.getAttribute('http-equiv') || '')) m.remove();
+    });
+
+    // the hook goes first in <head> so its shims are in place before the
+    // page's own scripts run. it carries this page's path so it can resolve
+    // relative iframe and image urls against the filesystem
+    const head = doc.head || doc.documentElement;
+    head.insertAdjacentHTML('afterbegin', fileHook(path));
+
+    return '<!doctype html>' + doc.documentElement.outerHTML;
+  } catch (e) {
+    return fileHook(path) + content;
+  }
 }
 
 // the proxy only exists on the deployed site, not under live server.
@@ -632,9 +755,11 @@ function renderResults(list, items, query) {
 
 // ---------- image search ----------
 
-// openverse is a key free, cors friendly index of openly licensed images, so
-// it works straight from the browser with no server in the way
-const IMAGE_API = 'https://api.openverse.org/v1/images/?mature=false&page_size=40&q=';
+// image search runs straight from the browser against wikimedia commons, whose
+// api allows cross origin requests when you pass origin=*. no server, no deploy,
+// no cache to get in the way. the deployed search api is only a fallback
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
+  + '&prop=imageinfo&iiprop=url&iiurlwidth=400&generator=search&gsrnamespace=6&gsrlimit=48&gsrsearch=';
 
 function safeName(title, url) {
   let base = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -665,7 +790,14 @@ function buildImages(query) {
 
   fetchImages(query)
     .then(data => {
-      if (data.note) head.textContent = `images for "${query}"  \u00b7  openverse`;
+      if (!data.items.length) {
+        grid.innerHTML = '';
+        const note = document.createElement('div');
+        note.className = 'br-results-note';
+        note.textContent = 'no images found for that [-_-]';
+        grid.appendChild(note);
+        return;
+      }
       renderImages(grid, data.items);
     })
     .catch(() => {
@@ -679,24 +811,56 @@ function buildImages(query) {
   return box;
 }
 
+async function commonsImages(query) {
+  const res = await fetch(COMMONS_API + encodeURIComponent(query));
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const pages = (data && data.query && data.query.pages) || {};
+
+  return Object.keys(pages)
+    .map(k => pages[k])
+    .sort((a, b) => (a.index || 0) - (b.index || 0))
+    .map(p => {
+      const info = (p.imageinfo || [])[0] || {};
+      const name = (p.title || '').replace(/^File:/, '');
+      return {
+        thumb: info.thumburl || info.url,
+        full: info.url,
+        title: name.replace(/\.[^.]+$/, ''),
+        source: info.descriptionurl || info.url,
+        creator: '',
+        license: '',
+        filename: safeName(name, info.url),
+      };
+    })
+    .filter(x => x.full && /\.(jpe?g|png|gif|webp|svg)$/i.test(x.full));
+}
+
 async function fetchImages(query) {
   if (typeof fetch !== 'function') return { items: [], note: 'this browser has no fetch' };
 
-  const res = await fetch(IMAGE_API + encodeURIComponent(query));
-  if (!res.ok) return { items: [], note: 'image search answered ' + res.status };
+  // primary: wikimedia commons, works with no server
+  try {
+    const items = await commonsImages(query);
+    if (items.length) return { items, note: null };
+  } catch (e) { /* fall through to the server */ }
 
-  const data = await res.json();
-  const items = (data.results || []).map(r => ({
-    thumb: r.thumbnail || r.url,
-    full: r.url,
-    title: r.title || 'image',
-    source: r.foreign_landing_url || r.url,
-    creator: r.creator || '',
-    license: (r.license || '').toUpperCase(),
-    filename: safeName(r.title, r.url),
-  }));
+  // fallback: the deployed search api (duckduckgo etc.)
+  try {
+    const res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query));
+    if (res.ok) {
+      const data = await res.json();
+      const items = (data.images || []).map(r => ({
+        thumb: r.thumb || r.full, full: r.full, title: r.title || 'image',
+        source: r.source || r.full, creator: '', license: '',
+        filename: safeName(r.title, r.full),
+      })).filter(x => x.full);
+      if (items.length) return { items, note: null };
+    }
+  } catch (e) { /* offline or not deployed */ }
 
-  return { items, note: items.length ? null : 'nothing found' };
+  return { items: [], note: 'nothing found' };
 }
 
 function renderImages(grid, items) {
@@ -798,6 +962,11 @@ function openLightbox(image) {
   wall.textContent = 'Set as wallpaper';
   wall.addEventListener('click', () => setAsWallpaper(image, wall));
 
+  const save = document.createElement('button');
+  save.className = 'br-lightbox-btn';
+  save.textContent = 'Save to Files';
+  save.addEventListener('click', () => saveImageToFs(image, save));
+
   const src = document.createElement('button');
   src.className = 'br-lightbox-btn';
   src.textContent = 'Open source \u2197';
@@ -809,6 +978,7 @@ function openLightbox(image) {
   close.addEventListener('click', () => back.remove());
 
   actions.appendChild(dl);
+  actions.appendChild(save);
   actions.appendChild(wall);
   actions.appendChild(src);
   bar.appendChild(caption);
@@ -849,6 +1019,27 @@ async function downloadImage(image, btn) {
   setTimeout(() => { btn.textContent = old; }, 1400);
 }
 
+async function saveImageToFs(image, btn) {
+  const old = btn.textContent;
+  btn.textContent = 'saving...';
+
+  const blob = await fetchImageBlob(image);
+  if (!blob || !FS) {
+    btn.textContent = 'could not save';
+    setTimeout(() => { btn.textContent = old; }, 1600);
+    return;
+  }
+
+  const content = await blobToDataURL(blob);
+  if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
+  const name = uniqueName('Downloads', image.filename);
+  FS.writeFile('Downloads', name, content);
+
+  btn.textContent = 'Saved';
+  brToast('saved to Downloads/' + name);
+  setTimeout(() => { btn.textContent = old; }, 1600);
+}
+
 async function setAsWallpaper(image, btn) {
   const old = btn.textContent;
   btn.textContent = 'setting...';
@@ -878,10 +1069,115 @@ async function setAsWallpaper(image, btn) {
   setTimeout(() => { btn.textContent = old; }, 1600);
 }
 
+// ---------- downloads into the filesystem ----------
+
+function brToast(msg) {
+  const root = document.querySelector('.br');
+  if (!root) return null;
+  let t = root.querySelector('.br-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'br-toast';
+    root.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 3200);
+  return t;
+}
+
+function fileNameFromUrl(url) {
+  try {
+    const name = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+    return decodeURIComponent(name);
+  } catch (e) { return ''; }
+}
+
+const MIME_EXT = {
+  'application/pdf': 'pdf', 'application/zip': 'zip', 'application/json': 'json',
+  'text/plain': 'txt', 'text/csv': 'csv', 'text/html': 'html',
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg',
+  'audio/mpeg': 'mp3', 'video/mp4': 'mp4',
+};
+
+function ensureExt(name, mime) {
+  if (/\.[a-z0-9]+$/i.test(name)) return name;
+  const ext = MIME_EXT[(mime || '').split(';')[0].trim()] || 'bin';
+  return (name || 'download') + '.' + ext;
+}
+
+function isTextType(mime, name) {
+  return /^text\//i.test(mime || '')
+    || /(json|xml|javascript|csv)/i.test(mime || '')
+    || /\.(txt|md|csv|json|xml|js|css|html?|svg)$/i.test(name || '');
+}
+
+function uniqueName(folder, name) {
+  if (!FS.exists((folder ? folder + '/' : '') + name)) return name;
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  let i = 1;
+  while (FS.exists((folder ? folder + '/' : '') + stem + '(' + i + ')' + ext)) i++;
+  return stem + '(' + i + ')' + ext;
+}
+
+async function downloadToFs(url, suggestedName) {
+  if (!FS) { brToast('no filesystem to save into'); return; }
+  brToast('downloading...');
+
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(url));
+    if (!res.ok) throw new Error('the file answered ' + res.status);
+
+    const blob = await res.blob();
+    let name = (suggestedName || fileNameFromUrl(url) || 'download').split(/[?#]/)[0];
+
+    // the proxy hands back a small html error page when a file is blocked or
+    // over its size limit. saving that as the "file" would be junk, so bounce
+    // the download to a real browser tab instead
+    const wantedBinary = /\.(pdf|zip|rar|7z|tar|gz|docx?|xlsx?|pptx?|mp3|mp4|apk|exe|dmg|iso|epub)(\?|$)/i.test(name + url);
+    if (/text\/html/i.test(blob.type) && wantedBinary) {
+      brToast('too big or blocked here, opening in a real tab');
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+
+    name = ensureExt(name, blob.type);
+    const content = isTextType(blob.type, name) ? await blob.text() : await blobToDataURL(blob);
+
+    if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
+    name = uniqueName('Downloads', name);
+
+    const err = FS.writeFile('Downloads', name, content);
+    if (err) throw new Error(err);
+
+    brToast('saved to Downloads/' + name);
+  } catch (e) {
+    brToast('could not download here, opening in a real tab');
+    window.open(url, '_blank', 'noopener');
+  }
+}
+
 // no allow-same-origin on purpose: the proxied page comes from our own origin,
 // so without it a hostile page could reach into the os
 // runs the page straight from the virtual filesystem. no allow-same-origin, so
 // a page you wrote cannot reach into the os itself
+// an image opened as a page (e.g. a link straight to a png) should be shown,
+// not parsed as html, which would just print the data url as text
+function imagePage(path, content) {
+  let src = content;
+  if (!/^\s*data:/i.test(content) && /^\s*<svg/i.test(content)) {
+    src = 'data:image/svg+xml;utf8,' + encodeURIComponent(content);
+  }
+  return '<!doctype html><meta charset="utf-8">'
+    + '<style>html,body{margin:0;height:100%;background:#111;'
+    + 'display:flex;align-items:center;justify-content:center}'
+    + 'img{max-width:100%;max-height:100%;object-fit:contain}</style>'
+    + '<img src="' + String(src).replace(/"/g, '&quot;') + '">';
+}
+
 function fileFrame(path) {
   const holder = document.createElement('div');
   holder.className = 'br-holder';
@@ -895,7 +1191,9 @@ function fileFrame(path) {
 
   const frame = document.createElement('iframe');
   frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
-  frame.setAttribute('srcdoc', assembleFsPage(path, content));
+  frame.setAttribute('srcdoc', FS.isImage && FS.isImage(path)
+    ? imagePage(path, content)
+    : assembleFsPage(path, content));
   holder.appendChild(frame);
   return holder;
 }
@@ -913,6 +1211,12 @@ window.addEventListener('message', (e) => {
     return;
   }
 
+  // a download link on a proxied website: pull the file into the filesystem
+  if (e.data?.type === 'proxyDownload' && e.data.url) {
+    downloadToFs(e.data.url, e.data.name);
+    return;
+  }
+
   // the files app or the code editor asked us to run a local page
   if (e.data?.type === 'openPage' && e.data.path) {
     if (!active()) newTab(HOME);
@@ -925,6 +1229,21 @@ window.addEventListener('message', (e) => {
     const here = tab && tab.history[tab.index];
     if (!here || !here.startsWith(FILE)) return;
     go(resolveFile(here.slice(FILE.length), e.data.href));
+    return;
+  }
+
+  // a sandboxed local page (or one nested inside it) asks for a file so it can
+  // fill a runtime iframe or image from the virtual filesystem
+  if (e.data?.type === 'fsResolve' && e.data.reqId != null && e.source) {
+    const path = e.data.path;
+    const exists = !!(FS && FS.exists(path));
+    const isImage = exists && FS.isImage && FS.isImage(path);
+    let content = '';
+    if (exists) {
+      const raw = FS.readFile(path) || '';
+      content = isImage ? raw : assembleFsPage(path, raw);
+    }
+    try { e.source.postMessage({ type: 'fsResolved', reqId: e.data.reqId, exists, isImage, content }, '*'); } catch (err) {}
   }
 });
 
