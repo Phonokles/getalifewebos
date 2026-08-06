@@ -99,15 +99,22 @@ function renderList() {
     row.className = 'files-item';
     const isPage = item.type === 'file' && FS.isPage && FS.isPage(item.name);
     const isCode = item.type === 'file' && FS.isRunnable && FS.isRunnable(item.name);
-    const runnable = isPage || isCode;
+    const isWinApp = item.type === 'file' && FS.isWindowApp && FS.isWindowApp(item.name);
+    const isWidget = item.type === 'file' && FS.isWidgetFile && FS.isWidgetFile(item.name);
+    const runnable = isPage || isCode || isWinApp || isWidget;
     const editable = item.type === 'file' && !FS.isImage(item.name);
+
+    const runTitle = isPage ? 'Open in the browser'
+      : isWinApp ? 'Run this app'
+      : isWidget ? 'Add this widget'
+      : 'Run in the terminal';
 
     row.innerHTML = `
       ${item.type === 'folder' ? ICON_FOLDER : ICON_FILE}
       <span class="files-item-name"></span>
       <span class="files-item-tools">
         ${editable ? '<span class="files-item-act files-item-edit" title="Edit in the code app">' + ICON_EDIT + '</span>' : ''}
-        ${runnable ? `<span class="files-item-act files-item-run" title="${isPage ? 'Open in the browser' : 'Run in the terminal'}">` + ICON_RUN + '</span>' : ''}
+        ${runnable ? `<span class="files-item-act files-item-run" title="${runTitle}">` + ICON_RUN + '</span>' : ''}
         <span class="files-item-act files-item-del" title="Delete">${ICON_DEL}</span>
       </span>
     `;
@@ -135,11 +142,17 @@ function renderList() {
       if (e.target.closest('.files-item-run')) {
         const full = joinPath(base, item.name);
         if (isPage) FS.requestOpenInBrowser(full);
+        else if (isWinApp) FS.launchWindow(full);
+        else if (isWidget) FS.toggleWidget(full);
         else FS.requestRun(full);
         return;
       }
       if (item.type === 'folder') {
         navigate(joinPath(base, item.name));
+      } else if (isWinApp) {
+        FS.launchWindow(joinPath(base, item.name));
+      } else if (isWidget) {
+        FS.toggleWidget(joinPath(base, item.name));
       } else {
         FS.requestOpen(joinPath(base, item.name));
       }

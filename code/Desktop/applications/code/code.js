@@ -446,3 +446,231 @@ if (pending) {
 
 renderTypes();
 paintRun();
+
+// ---------- github ----------
+
+const ghModal = document.getElementById('gh-modal');
+const ghTitle = document.getElementById('gh-modal-title');
+const ghBody = document.getElementById('gh-modal-body');
+const ghStatus = document.getElementById('gh-modal-status');
+
+function ghOpen(title) {
+  ghTitle.textContent = title;
+  ghStatus.textContent = '';
+  ghStatus.className = 'gh-modal-status';
+  ghModal.classList.add('open');
+}
+
+function ghClose() {
+  ghModal.classList.remove('open');
+  ghBody.innerHTML = '';
+}
+
+function ghSay(msg, kind) {
+  ghStatus.textContent = msg || '';
+  ghStatus.className = 'gh-modal-status' + (kind ? ' ' + kind : '');
+}
+
+document.getElementById('gh-modal-close').addEventListener('click', ghClose);
+ghModal.addEventListener('click', (e) => { if (e.target === ghModal) ghClose(); });
+
+function parseRepo(value) {
+  const val = (value || '').trim()
+    .replace(/^https?:\/\/github\.com\//i, '')
+    .replace(/\.git$/i, '');
+  const parts = val.split('/').filter(Boolean);
+  return parts.length >= 2 ? { owner: parts[0], repo: parts[1] } : null;
+}
+
+function renderGhBar() {
+  const bar = document.getElementById('gh-bar');
+  if (!bar) return;
+
+  const GH = window.GitHubClient;
+  bar.innerHTML = '';
+  if (!GH) return;
+
+  if (GH.hasToken()) {
+    const who = document.createElement('span');
+    who.className = 'gh-bar-user';
+    who.textContent = 'GitHub: ' + GH.user();
+
+    const out = document.createElement('button');
+    out.className = 'gh-bar-btn';
+    out.textContent = 'Sign out';
+    out.addEventListener('click', () => { GH.signOut(); renderGhBar(); });
+
+    bar.appendChild(who);
+    bar.appendChild(out);
+  } else {
+    const b = document.createElement('button');
+    b.className = 'gh-bar-btn gh-bar-signin';
+    b.textContent = 'Sign in to GitHub';
+    b.addEventListener('click', () => openSignIn());
+    bar.appendChild(b);
+  }
+}
+
+function openSignIn(after) {
+  const GH = window.GitHubClient;
+  if (!GH) return;
+
+  ghOpen('Sign in to GitHub');
+  ghBody.innerHTML = `
+    <p class="gh-note">Paste a personal access token with <b>repo</b> scope
+      (github.com &rsaquo; Settings &rsaquo; Developer settings &rsaquo; Tokens).
+      It is stored only in this browser.</p>
+    <input type="password" class="gh-input" id="gh-token" placeholder="ghp_...  or  github_pat_..." spellcheck="false" autocomplete="off">
+    <button class="gh-primary" id="gh-token-go">Sign in</button>`;
+
+  const input = document.getElementById('gh-token');
+  const go = document.getElementById('gh-token-go');
+  setTimeout(() => input.focus(), 40);
+
+  async function run() {
+    go.disabled = true;
+    ghSay('checking token...');
+    try {
+      const login = await GH.signIn(input.value);
+      ghSay('signed in as ' + login, 'ok');
+      renderGhBar();
+      setTimeout(() => { ghClose(); if (after) after(); }, 650);
+    } catch (e) {
+      ghSay(String(e.message || e), 'err');
+      go.disabled = false;
+    }
+  }
+
+  go.addEventListener('click', run);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+}
+
+function fillRepoPicks(boxId, onPick) {
+  const GH = window.GitHubClient;
+  GH.repos().then(list => {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.innerHTML = '<div class="gh-repos-title">your repos</div>';
+    list.slice(0, 40).forEach(r => {
+      const b = document.createElement('button');
+      b.className = 'gh-repo-chip';
+      b.textContent = r.full_name + (r.private ? ' \u00b7 private' : '');
+      b.addEventListener('click', () => onPick(r));
+      box.appendChild(b);
+    });
+  }).catch(() => {});
+}
+
+function openClone() {
+  const GH = window.GitHubClient;
+  if (!GH) return;
+  if (!GH.hasToken()) { openSignIn(openClone); return; }
+
+  ghOpen('Clone from GitHub');
+  ghBody.innerHTML = `
+    <p class="gh-note">Enter a repo as <b>owner/name</b>. Its files land in a new folder in your filesystem.</p>
+    <input type="text" class="gh-input" id="gh-repo" placeholder="Phonokles/getalifewebos" spellcheck="false" autocomplete="off">
+    <input type="text" class="gh-input" id="gh-branch" placeholder="branch (optional)" spellcheck="false" autocomplete="off">
+    <button class="gh-primary" id="gh-clone-go">Clone</button>
+    <div class="gh-repos" id="gh-repos"></div>`;
+
+  const repoI = document.getElementById('gh-repo');
+  const branchI = document.getElementById('gh-branch');
+  const go = document.getElementById('gh-clone-go');
+  setTimeout(() => repoI.focus(), 40);
+
+  fillRepoPicks('gh-repos', (r) => { repoI.value = r.full_name; branchI.value = r.branch || ''; });
+
+  async function run() {
+    const parsed = parseRepo(repoI.value);
+    if (!parsed) { ghSay('use owner/name', 'err'); return; }
+
+    go.disabled = true;
+    try {
+      ghSay('reading the repo tree...');
+      const res = await GH.clone(parsed.owner, parsed.repo, branchI.value.trim(), parsed.repo,
+        (n, t) => ghSay(`downloading ${n}/${t}`));
+      ghSay(`cloned ${res.count} files into ${res.dest}`
+        + (res.skipped ? `  (${res.skipped} skipped, no extension)` : ''), 'ok');
+      renderRecent();
+      setTimeout(() => { ghClose(); openFolder(res.dest); }, 900);
+    } catch (e) {
+      ghSay(String(e.message || e), 'err');
+      go.disabled = false;
+    }
+  }
+
+  go.addEventListener('click', run);
+  [repoI, branchI].forEach(el => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); }));
+}
+
+function openCommit() {
+  const GH = window.GitHubClient;
+  if (!GH || !FS) return;
+  if (!GH.hasToken()) { openSignIn(openCommit); return; }
+
+  const folder = currentFolder;
+  let files;
+  if (folder) {
+    files = GH.collect(folder);
+  } else {
+    const name = currentFilename();
+    FS.writeFile('', name, textarea.value);
+    files = [{ path: name, content: textarea.value }];
+  }
+
+  if (!files.length) { ghOpen('Commit to GitHub'); ghSay('nothing to commit', 'err'); return; }
+
+  ghOpen('Commit to GitHub');
+  ghBody.innerHTML = `
+    <p class="gh-note">${folder
+      ? `Committing the <b>${folder}</b> folder (${files.length} files).`
+      : `Committing <b>${currentFilename()}</b>.`} Existing files are updated, new ones added.</p>
+    <input type="text" class="gh-input" id="gh-crepo" placeholder="owner/name" spellcheck="false" autocomplete="off">
+    <input type="text" class="gh-input" id="gh-cbranch" placeholder="branch (pick a repo to fill)" spellcheck="false" autocomplete="off">
+    <input type="text" class="gh-input" id="gh-cmsg" placeholder="commit message" spellcheck="false" autocomplete="off">
+    <button class="gh-primary" id="gh-commit-go">Commit &amp; push</button>
+    <div class="gh-repos" id="gh-repos"></div>`;
+
+  const repoI = document.getElementById('gh-crepo');
+  const branchI = document.getElementById('gh-cbranch');
+  const msgI = document.getElementById('gh-cmsg');
+  const go = document.getElementById('gh-commit-go');
+
+  const last = localStorage.getItem('githubLastRepo') || '';
+  if (last) repoI.value = last;
+  msgI.value = 'update ' + (folder || currentFilename());
+  setTimeout(() => repoI.focus(), 40);
+
+  fillRepoPicks('gh-repos', (r) => { repoI.value = r.full_name; branchI.value = r.branch || ''; });
+
+  async function run() {
+    const parsed = parseRepo(repoI.value);
+    if (!parsed) { ghSay('use owner/name', 'err'); return; }
+    const branch = branchI.value.trim() || 'main';
+
+    go.disabled = true;
+    try {
+      ghSay('uploading files...');
+      const res = await GH.push({
+        owner: parsed.owner, repo: parsed.repo, branch,
+        message: msgI.value.trim(), files,
+        onProgress: (n, t) => ghSay(`uploading ${n}/${t}`),
+      });
+      localStorage.setItem('githubLastRepo', parsed.owner + '/' + parsed.repo);
+      ghSay(`committed ${res.count} files  \u00b7  ${res.sha}`, 'ok');
+      setTimeout(ghClose, 1800);
+    } catch (e) {
+      ghSay(String(e.message || e), 'err');
+      go.disabled = false;
+    }
+  }
+
+  go.addEventListener('click', run);
+  [repoI, branchI, msgI].forEach(el => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); }));
+}
+
+document.getElementById('start-clone').addEventListener('click', openClone);
+document.getElementById('btn-commit').addEventListener('click', openCommit);
+
+renderGhBar();

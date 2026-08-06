@@ -28,6 +28,7 @@ html, body {
 }
 
 .br {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -620,4 +621,129 @@ html, body {
 .br-results-more:hover {
   background: rgba(var(--fg-rgb), 0.05);
   color: rgb(var(--fg-rgb));
+}
+
+/* ---------- image search grid ---------- */
+
+.br-img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  padding: 4px 2px 20px;
+  align-content: start;
+}
+
+.br-img-cell {
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-md);
+  background: rgba(var(--fg-rgb), 0.03);
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.br-img-cell:hover {
+  border-color: var(--edge-strong);
+  transform: translateY(-2px);
+}
+
+.br-img-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- image lightbox ---------- */
+
+.br-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.br-lightbox-inner {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.br-lightbox-img {
+  max-width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  box-shadow: var(--lift-lg);
+}
+
+.br-lightbox-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  max-width: 640px;
+}
+
+.br-lightbox-caption {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  letter-spacing: 0.4px;
+}
+
+.br-lightbox-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.br-lightbox-btn {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.br-lightbox-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.br-lightbox-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.br-lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.85);
 }

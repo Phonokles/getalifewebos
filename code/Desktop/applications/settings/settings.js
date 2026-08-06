@@ -194,28 +194,75 @@ function setupPetsPanel() {
   render();
 }
 
-function setupWidgetsPanel() {
-  let visible = { clock: true, todo: true };
+function readWidgetVisible() {
   try {
     const stored = JSON.parse(localStorage.getItem('widgetPrefs'));
-    if (stored?.visible) {
-      visible = { clock: stored.visible.clock !== false, todo: stored.visible.todo !== false };
-    }
-  } catch (e) {}
+    return (stored && stored.visible) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function setupWidgetsPanel() {
+  const visible = readWidgetVisible();
 
   ['clock', 'todo'].forEach(key => {
     const btn = document.getElementById(`widget-toggle-${key}`);
-    btn.classList.toggle('on', visible[key]);
+    let on = visible[key] !== false;
+    btn.classList.toggle('on', on);
 
     btn.addEventListener('click', () => {
-      visible[key] = !visible[key];
-      btn.classList.toggle('on', visible[key]);
-      window.parent.postMessage({ type: 'setWidgetVisible', widget: key, visible: visible[key] }, '*');
+      on = !on;
+      btn.classList.toggle('on', on);
+      window.parent.postMessage({ type: 'setWidgetVisible', widget: key, visible: on }, '*');
     });
   });
 
   document.getElementById('widget-edit-btn').addEventListener('click', () => {
     window.parent.postMessage({ type: 'widgetEditMode' }, '*');
+  });
+
+  renderUserWidgets();
+
+  // widgets come and go as .widget files are created or deleted
+  window.parent.addEventListener('userapps-changed', () => {
+    const frame = window.frameElement;
+    if (frame && !frame.isConnected) return;
+    if (!document.getElementById('panel-widgets')) return;
+    renderUserWidgets();
+  });
+}
+
+function renderUserWidgets() {
+  const arrangeRow = document.getElementById('widget-edit-btn').closest('.setting-row');
+  const panel = document.getElementById('panel-widgets');
+  panel.querySelectorAll('.user-widget-row').forEach(r => r.remove());
+
+  const UA = window.parent.UserApps;
+  const widgets = UA ? UA.listWidgets() : [];
+  const visible = readWidgetVisible();
+
+  widgets.forEach(w => {
+    const on = visible[w.key] === true;                 // user widgets are off until enabled
+
+    const row = document.createElement('div');
+    row.className = 'setting-row user-widget-row';
+    row.innerHTML = `
+      <div class="setting-row-text">
+        <span class="setting-row-label"></span>
+        <span class="setting-row-value">From ${w.name}.widget</span>
+      </div>
+      <button class="sw${on ? ' on' : ''}" type="button" role="switch"><span class="sw-knob"></span></button>`;
+    row.querySelector('.setting-row-label').textContent = w.name;
+
+    const btn = row.querySelector('.sw');
+    btn.addEventListener('click', () => {
+      const next = !btn.classList.contains('on');
+      btn.classList.toggle('on', next);
+      window.parent.postMessage({ type: 'setWidgetVisible', widget: w.key, visible: next }, '*');
+    });
+
+    arrangeRow.parentNode.insertBefore(row, arrangeRow);
   });
 }
 

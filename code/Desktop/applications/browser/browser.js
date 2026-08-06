@@ -8,22 +8,37 @@ window.addEventListener('message', (e) => {
 
 const HOME = 'about:home';
 const RESULTS = 'about:results?';
+const IMAGES = 'about:images?';
 const VIDEOS = 'about:videos?';
 const PROXY = '/api/proxy?url=';
 const FILE = 'file:';
 
 const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : null;
 
-// links inside a local page should stay inside the os
+// injected first in every local page: keeps its links and any script driven
+// navigation inside the os instead of hitting the real server
 const FILE_HOOK = `<script>
 (function () {
+  function nav(u) { try { parent.postMessage({ type: 'fileNav', href: String(u) }, '*'); } catch (e) {} }
+
+  // window.location = '...' , location.assign() and location.replace() can be
+  // trapped. location.href = '...' cannot, browsers keep that one read only
+  try {
+    var real = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true, get: function () { return real; }, set: function (u) { nav(u); },
+    });
+  } catch (e) {}
+  try { window.location.assign = nav; } catch (e) {}
+  try { window.location.replace = nav; } catch (e) {}
+
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href]');
     if (!a) return;
     var href = a.getAttribute('href') || '';
-    if (href.startsWith('javascript:') || href.startsWith('#')) return;
+    if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
     e.preventDefault();
-    parent.postMessage({ type: 'fileNav', href: href }, '*');
+    nav(href);
   }, true);
 }());
 <\/script>`;
@@ -38,6 +53,94 @@ function resolveFile(base, href) {
     else parts.push(part);
   });
   return FILE + parts.join('/');
+}
+
+// resolve a relative path against a file's folder, staying in the filesystem
+function resolveFsPath(base, href) {
+  const parts = base.split('/').slice(0, -1);
+  href.split('/').forEach(part => {
+    if (!part || part === '.') return;
+    if (part === '..') parts.pop();
+    else parts.push(part);
+  });
+  return parts.join('/');
+}
+
+// follows a chain of meta refreshes inside the filesystem, so a redirect page
+// like index.html lands on its real target instead of the dev server
+function fsRedirectTarget(path) {
+  const seen = new Set();
+  let current = path;
+
+  while (!seen.has(current)) {
+    seen.add(current);
+    const content = FS ? FS.readFile(current) : null;
+    if (content == null) break;
+
+    const meta = /<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/i.exec(content);
+    if (!meta) break;
+    const url = /url\s*=\s*['"]?([^'">;]+)/i.exec(meta[0]);
+    if (!url) break;
+
+    const href = url[1].trim();
+    if (/^https?:/i.test(href)) break;         // external redirect, leave it
+
+    const next = resolveFsPath(current, href);
+    if (!FS.exists(next)) break;
+    current = next;
+  }
+
+  return current;
+}
+
+// pulls a local page's own css, js and images out of the filesystem and inlines
+// them, since relative urls in a srcdoc frame would point at the real server
+function assembleFsPage(path, content) {
+  let doc;
+  try { doc = new DOMParser().parseFromString(content, 'text/html'); }
+  catch (e) { return content + FILE_HOOK; }
+
+  const local = (value) => {
+    if (!value || /^(https?:|data:|blob:|#|javascript:|mailto:)/i.test(value)) return null;
+    const p = resolveFsPath(path, value);
+    return FS.exists(p) ? p : null;
+  };
+
+  doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(link => {
+    const p = local(link.getAttribute('href'));
+    if (!p) return;
+    const style = doc.createElement('style');
+    style.textContent = FS.readFile(p) || '';
+    link.replaceWith(style);
+  });
+
+  doc.querySelectorAll('script[src]').forEach(s => {
+    const p = local(s.getAttribute('src'));
+    if (!p) return;
+    const ns = doc.createElement('script');
+    [...s.attributes].forEach(a => { if (a.name !== 'src') ns.setAttribute(a.name, a.value); });
+    ns.textContent = FS.readFile(p) || '';
+    s.replaceWith(ns);
+  });
+
+  doc.querySelectorAll('img[src], source[src], audio[src], video[src]').forEach(el => {
+    const p = local(el.getAttribute('src'));
+    if (!p) return;
+    const data = FS.readFile(p) || '';
+    if (data.startsWith('data:')) el.setAttribute('src', data);
+  });
+
+  // a <base> or leftover meta refresh would send everything back to the server
+  doc.querySelectorAll('base').forEach(b => b.remove());
+  doc.querySelectorAll('meta[http-equiv]').forEach(m => {
+    if (/refresh/i.test(m.getAttribute('http-equiv') || '')) m.remove();
+  });
+
+  // the hook must run before the page's own scripts, so it goes first in head
+  const head = doc.head || doc.documentElement;
+  head.insertAdjacentHTML('afterbegin', FILE_HOOK);
+
+  return '<!doctype html>' + doc.documentElement.outerHTML;
 }
 
 // the proxy only exists on the deployed site, not under live server.
@@ -70,8 +173,8 @@ const EXTERNAL_SEARCH = 'https://duckduckgo.com/?q=';
 const SEARCH_API = '/api/search?q=';
 const WIKI_LANG = (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
 
-// web is the real search, wikipedia is a separate mode you can pick
-const MODES = ['web', 'wikipedia'];
+// web is the real search, images and wikipedia are separate modes you can pick
+const MODES = ['web', 'images', 'wikipedia'];
 let mode = localStorage.getItem('browserMode');
 if (!MODES.includes(mode)) mode = 'web';
 
@@ -130,6 +233,7 @@ function toUrl(input) {
   if (FS && /\.(html?|svg)$/i.test(raw) && FS.exists(raw)) return FILE + raw;
   if (/^yt\s+/i.test(raw)) return VIDEOS + encodeURIComponent(raw.replace(/^yt\s+/i, ''));
   if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(raw)) return 'https://' + raw;
+  if (mode === 'images') return IMAGES + encodeURIComponent(raw);
   return RESULTS + encodeURIComponent(raw) + (mode === 'wikipedia' ? '&wiki=1' : '');
 }
 
@@ -142,6 +246,7 @@ function youtubeId(url) {
 function labelFor(url) {
   if (url === HOME) return 'new tab';
   if (url.startsWith(RESULTS)) return decodeURIComponent(url.slice(RESULTS.length)).slice(0, 18);
+  if (url.startsWith(IMAGES)) return 'img: ' + decodeURIComponent(url.slice(IMAGES.length)).slice(0, 13);
   if (url.startsWith(VIDEOS)) return 'yt: ' + decodeURIComponent(url.slice(VIDEOS.length)).slice(0, 14);
   if (url.startsWith(FILE)) return url.slice(FILE.length).split('/').pop();
   if (youtubeId(url)) return 'video';
@@ -246,13 +351,24 @@ function render(tab, url) {
     return;
   }
 
+  if (url.startsWith(IMAGES)) {
+    tab.view.appendChild(buildImages(decodeURIComponent(url.slice(IMAGES.length))));
+    return;
+  }
+
   if (url.startsWith(VIDEOS)) {
     tab.view.appendChild(buildVideos(decodeURIComponent(url.slice(VIDEOS.length))));
     return;
   }
 
   if (url.startsWith(FILE)) {
-    tab.view.appendChild(fileFrame(url.slice(FILE.length)));
+    const requested = url.slice(FILE.length);
+    const finalPath = fsRedirectTarget(requested);
+    // rewrite the history entry so the url bar and back button track the real page
+    if (finalPath !== requested && tab.history[tab.index] === url) {
+      tab.history[tab.index] = FILE + finalPath;
+    }
+    tab.view.appendChild(fileFrame(finalPath));
     return;
   }
 
@@ -514,6 +630,254 @@ function renderResults(list, items, query) {
   });
 }
 
+// ---------- image search ----------
+
+// openverse is a key free, cors friendly index of openly licensed images, so
+// it works straight from the browser with no server in the way
+const IMAGE_API = 'https://api.openverse.org/v1/images/?mature=false&page_size=40&q=';
+
+function safeName(title, url) {
+  let base = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  if (!base) {
+    try { base = new URL(url).pathname.split('/').pop().replace(/\.[^.]+$/, '') || 'image'; }
+    catch (e) { base = 'image'; }
+  }
+  let ext = 'jpg';
+  const m = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.exec(url || '');
+  if (m) ext = m[1].toLowerCase();
+  return base + '.' + ext;
+}
+
+function buildImages(query) {
+  const box = document.createElement('div');
+  box.className = 'br-results';
+
+  const head = document.createElement('div');
+  head.className = 'br-results-head';
+  head.textContent = 'images for "' + query + '"';
+
+  const grid = document.createElement('div');
+  grid.className = 'br-img-grid';
+  grid.innerHTML = '<div class="br-results-note">looking for images...</div>';
+
+  box.appendChild(head);
+  box.appendChild(grid);
+
+  fetchImages(query)
+    .then(data => {
+      if (data.note) head.textContent = `images for "${query}"  \u00b7  openverse`;
+      renderImages(grid, data.items);
+    })
+    .catch(() => {
+      grid.innerHTML = '';
+      const note = document.createElement('div');
+      note.className = 'br-results-note';
+      note.textContent = 'could not reach the image search.';
+      grid.appendChild(note);
+    });
+
+  return box;
+}
+
+async function fetchImages(query) {
+  if (typeof fetch !== 'function') return { items: [], note: 'this browser has no fetch' };
+
+  const res = await fetch(IMAGE_API + encodeURIComponent(query));
+  if (!res.ok) return { items: [], note: 'image search answered ' + res.status };
+
+  const data = await res.json();
+  const items = (data.results || []).map(r => ({
+    thumb: r.thumbnail || r.url,
+    full: r.url,
+    title: r.title || 'image',
+    source: r.foreign_landing_url || r.url,
+    creator: r.creator || '',
+    license: (r.license || '').toUpperCase(),
+    filename: safeName(r.title, r.url),
+  }));
+
+  return { items, note: items.length ? null : 'nothing found' };
+}
+
+function renderImages(grid, items) {
+  grid.innerHTML = '';
+
+  if (!items.length) {
+    const note = document.createElement('div');
+    note.className = 'br-results-note';
+    note.textContent = 'no images found for that [-_-]';
+    grid.appendChild(note);
+    return;
+  }
+
+  items.forEach(image => {
+    const cell = document.createElement('button');
+    cell.className = 'br-img-cell';
+
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.src = image.thumb;
+    img.alt = image.title;
+    img.addEventListener('error', () => cell.remove());
+
+    cell.appendChild(img);
+    cell.addEventListener('click', () => openLightbox(image));
+    grid.appendChild(cell);
+  });
+}
+
+// ---------- image lightbox ----------
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
+// tries the image straight from its host, then through the proxy which adds the
+// cors header the host may be missing
+async function imageToBlob(src) {
+  if (!src) return null;
+  try {
+    const r = await fetch(src, { mode: 'cors' });
+    if (r.ok) return await r.blob();
+  } catch (e) { /* host has no cors, fall through */ }
+
+  try {
+    const r = await fetch(PROXY + encodeURIComponent(src));
+    if (r.ok) {
+      const blob = await r.blob();
+      if (blob.type.startsWith('image/')) return blob;
+    }
+  } catch (e) { /* proxy not deployed */ }
+
+  return null;
+}
+
+async function fetchImageBlob(image) {
+  return (await imageToBlob(image.full)) || (await imageToBlob(image.thumb));
+}
+
+function openLightbox(image) {
+  const root = document.querySelector('.br');
+
+  const back = document.createElement('div');
+  back.className = 'br-lightbox';
+
+  const inner = document.createElement('div');
+  inner.className = 'br-lightbox-inner';
+
+  const big = document.createElement('img');
+  big.className = 'br-lightbox-img';
+  big.src = image.full;
+  big.alt = image.title;
+  // if the full image refuses to load, fall back to the thumbnail
+  big.addEventListener('error', () => { big.src = image.thumb; }, { once: true });
+
+  const bar = document.createElement('div');
+  bar.className = 'br-lightbox-bar';
+
+  const caption = document.createElement('div');
+  caption.className = 'br-lightbox-caption';
+  caption.textContent = [image.title, image.creator && 'by ' + image.creator, image.license]
+    .filter(Boolean).join('  \u00b7  ');
+
+  const actions = document.createElement('div');
+  actions.className = 'br-lightbox-actions';
+
+  const dl = document.createElement('button');
+  dl.className = 'br-lightbox-btn';
+  dl.textContent = 'Download';
+  dl.addEventListener('click', () => downloadImage(image, dl));
+
+  const wall = document.createElement('button');
+  wall.className = 'br-lightbox-btn';
+  wall.textContent = 'Set as wallpaper';
+  wall.addEventListener('click', () => setAsWallpaper(image, wall));
+
+  const src = document.createElement('button');
+  src.className = 'br-lightbox-btn';
+  src.textContent = 'Open source \u2197';
+  src.addEventListener('click', () => window.open(image.source, '_blank', 'noopener'));
+
+  const close = document.createElement('button');
+  close.className = 'br-lightbox-close';
+  close.textContent = '\u00d7';
+  close.addEventListener('click', () => back.remove());
+
+  actions.appendChild(dl);
+  actions.appendChild(wall);
+  actions.appendChild(src);
+  bar.appendChild(caption);
+  bar.appendChild(actions);
+  inner.appendChild(close);
+  inner.appendChild(big);
+  inner.appendChild(bar);
+  back.appendChild(inner);
+
+  back.addEventListener('click', (e) => { if (e.target === back) back.remove(); });
+  document.addEventListener('keydown', function esc(ev) {
+    if (ev.key !== 'Escape') return;
+    back.remove();
+    document.removeEventListener('keydown', esc);
+  });
+
+  root.appendChild(back);
+}
+
+async function downloadImage(image, btn) {
+  const old = btn.textContent;
+  btn.textContent = 'getting it...';
+
+  const blob = await fetchImageBlob(image);
+  if (!blob) {
+    // last resort: hand it to a real browser tab where the user can save it
+    window.open(image.full, '_blank', 'noopener');
+    btn.textContent = old;
+    return;
+  }
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = image.filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  btn.textContent = 'Downloaded';
+  setTimeout(() => { btn.textContent = old; }, 1400);
+}
+
+async function setAsWallpaper(image, btn) {
+  const old = btn.textContent;
+  btn.textContent = 'setting...';
+
+  const blob = await fetchImageBlob(image);
+  if (!blob) {
+    btn.textContent = 'could not fetch';
+    setTimeout(() => { btn.textContent = old; }, 1600);
+    return;
+  }
+
+  const dataUrl = await blobToDataURL(blob);
+  const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace('+xml', '');
+  const name = image.filename.replace(/\.[^.]+$/, '') + '.' + ext;
+
+  // saving it into the filesystem means it also shows up in the wallpaper
+  // picker in settings, next to the built in ones
+  if (FS) {
+    if (!FS.exists('Pictures')) FS.createFolder('', 'Pictures');
+    FS.writeFile('Pictures', name, dataUrl);
+    window.parent.postMessage({ type: 'setWallpaper', file: 'Pictures/' + name }, '*');
+  } else {
+    window.parent.postMessage({ type: 'setWallpaper', file: dataUrl }, '*');
+  }
+
+  btn.textContent = 'Wallpaper set';
+  setTimeout(() => { btn.textContent = old; }, 1600);
+}
+
 // no allow-same-origin on purpose: the proxied page comes from our own origin,
 // so without it a hostile page could reach into the os
 // runs the page straight from the virtual filesystem. no allow-same-origin, so
@@ -531,7 +895,7 @@ function fileFrame(path) {
 
   const frame = document.createElement('iframe');
   frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
-  frame.setAttribute('srcdoc', content + FILE_HOOK);
+  frame.setAttribute('srcdoc', assembleFsPage(path, content));
   holder.appendChild(frame);
   return holder;
 }
@@ -755,7 +1119,9 @@ document.getElementById('external').addEventListener('click', () => {
 
   const target = url.startsWith(RESULTS)
     ? EXTERNAL_SEARCH + encodeURIComponent(decodeURIComponent(url.slice(RESULTS.length)))
-    : url;
+    : url.startsWith(IMAGES)
+      ? 'https://duckduckgo.com/?iax=images&ia=images&q=' + encodeURIComponent(decodeURIComponent(url.slice(IMAGES.length)))
+      : url;
 
   window.open(target, '_blank', 'noopener');
 });
@@ -766,6 +1132,7 @@ urlEl.addEventListener('keydown', (e) => {
   if (url) go(url);
 });
 
-// a page handed over from the files app opens right away
+// a page or url handed over from another app opens right away
+const pendingUrl = FS && FS.consumePendingUrl ? FS.consumePendingUrl() : null;
 const pendingPage = FS && FS.consumePendingPage ? FS.consumePendingPage() : null;
-newTab(pendingPage ? FILE + pendingPage : HOME);
+newTab(pendingUrl ? pendingUrl : (pendingPage ? FILE + pendingPage : HOME));

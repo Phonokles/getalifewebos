@@ -218,4 +218,49 @@
     }
   });
 
+  // widgets built from .widget files register themselves through here, so they
+  // get the same visibility, drag and resize handling as the built-in ones
+  function register(opts) {
+    if (!opts || WIDGETS.some(w => w.key === opts.key)) return;
+
+    WIDGETS.push({ key: opts.key, id: opts.id });
+    MIN_SIZE[opts.key] = opts.min || { w: 140, h: 100 };
+
+    if (prefs.visible[opts.key] === undefined && opts.defaultVisible !== undefined) {
+      prefs.visible[opts.key] = opts.defaultVisible;
+    }
+    if (!prefs.layout[opts.key] && opts.defaultLayout) {
+      prefs.layout[opts.key] = { ...opts.defaultLayout };
+    }
+
+    applyVisibility(opts.key);
+    applyLayout(opts.key);
+
+    // if the user is already arranging widgets, wire the new one up live
+    if (editing) {
+      const widget = el(opts.key);
+      if (widget) {
+        widget.style.display = '';
+        widget.classList.toggle('widget-ghost', prefs.visible[opts.key] === false);
+        const handle = document.createElement('div');
+        handle.className = 'widget-resize-handle';
+        widget.appendChild(handle);
+        widget.addEventListener('pointerdown', onPointerDown);
+      }
+    }
+  }
+
+  function unregister(key) {
+    const i = WIDGETS.findIndex(w => w.key === key);
+    if (i < 0) return;
+    WIDGETS.splice(i, 1);
+    delete MIN_SIZE[key];
+  }
+
+  function isVisible(key) {
+    return prefs.visible[key] !== false;
+  }
+
+  window.WidgetManager = { register, unregister, isVisible };
+
 })();

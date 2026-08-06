@@ -29,6 +29,18 @@
 
   const PINNED = ['win-terminal', 'win-files', 'win-settings'];
 
+  // a running .window app is not in APPS, so it gets described from its id
+  function userInfo(app) {
+    if (typeof app !== 'string' || app.indexOf('uwin:') !== 0) return null;
+    const path = app.slice(5);
+    const label = path.split('/').pop().replace(/\.window$/i, '');
+    return { label, letter: (label[0] || '?').toUpperCase(), user: true, path };
+  }
+
+  function appInfo(app) {
+    return APPS[app] || userInfo(app);
+  }
+
   const bar = document.getElementById('taskbar-apps');
   const preview = document.getElementById('tb-preview');
 
@@ -37,7 +49,7 @@
   function render() {
     const running = [...new Set(
       [...document.querySelectorAll('.app-window[data-app]')].map(w => w.dataset.app)
-    )].filter(a => !PINNED.includes(a) && APPS[a]);
+    )].filter(a => !PINNED.includes(a) && appInfo(a));
 
     const parts = PINNED.map(a => btn(a));
     if (running.length) parts.push('<div class="taskbar-sep"></div>');
@@ -56,7 +68,7 @@
         const btn = img.closest('.taskbar-app-btn');
         if (!btn) return;
         btn.classList.add('no-icon');
-        btn.textContent = (APPS[btn.dataset.app]?.label || '?')[0].toUpperCase();
+        btn.textContent = (appInfo(btn.dataset.app)?.label || '?')[0].toUpperCase();
       });
     });
 
@@ -69,16 +81,21 @@
   }
 
   function btn(app) {
+    const info = appInfo(app);
     const wins = winsOf(app);
     const focused = wins.some(w => w.id === window.focusedId);
-    const cls = 'taskbar-app-btn' + (wins.length ? ' running' : '') + (focused ? ' focused' : '');
-    return `<button class="${cls}" data-app="${app}" title="">${APPS[app].icon}</button>`;
+    const cls = 'taskbar-app-btn' + (wins.length ? ' running' : '') + (focused ? ' focused' : '')
+      + (info.user ? ' no-icon' : '');
+    const inner = info.user ? info.letter : info.icon;
+    return `<button class="${cls}" data-app="${app}" title="">${inner}</button>`;
   }
 
   function activate(app) {
+    const info = appInfo(app);
     const wins = winsOf(app);
     if (!wins.length) {
-      const fn = window[APPS[app].open];
+      if (info.user) { window.UserApps?.openWindow(info.path); return; }
+      const fn = window[info.open];
       if (typeof fn === 'function') fn();
       return;
     }
@@ -107,7 +124,7 @@
 
     const wins = winsOf(app);
     const rows = wins.map(w => {
-      const title = w.querySelector('.window-title')?.textContent || APPS[app].label;
+      const title = w.querySelector('.window-title')?.textContent || appInfo(app).label;
       const ws = w.dataset.workspace || '1';
       const hidden = w.dataset.minimized === 'true';
       return `
@@ -124,13 +141,13 @@
     }).join('');
 
     preview.innerHTML = `
-      <div class="tb-preview-title">${APPS[app].label}</div>
+      <div class="tb-preview-title">${appInfo(app).label}</div>
       ${wins.length ? `<div class="tb-preview-list">${rows}</div>` : ''}
     `;
 
     preview.querySelectorAll('.tb-shot').forEach((row, i) => {
       row.querySelector('.tb-shot-name').textContent =
-        wins[i].querySelector('.window-title')?.textContent || APPS[app].label;
+        wins[i].querySelector('.window-title')?.textContent || appInfo(app).label;
 
       row.addEventListener('click', () => {
         const win = document.getElementById(row.dataset.id);

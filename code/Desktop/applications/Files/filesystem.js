@@ -132,6 +132,22 @@
       return /\.(c|cpp|cc|cxx|rs|go|zig|java|cs|kt|swift|py|js|ts|rb|php|lua|sh)$/i.test(path || '');
     },
 
+    isWindowApp(path) {
+      return /\.window$/i.test(path || '');
+    },
+
+    isWidgetFile(path) {
+      return /\.widget$/i.test(path || '');
+    },
+
+    launchWindow(path) {
+      if (window.UserApps) window.UserApps.openWindow(path);
+    },
+
+    toggleWidget(path) {
+      if (window.UserApps) window.UserApps.toggleWidget(path);
+    },
+
     requestRun(path) {
       this._pendingRun = path;
 
@@ -163,6 +179,35 @@
       if (this.isImage(path)) this.requestOpenInViewer(path);
       else if (this.isPage(path)) this.requestOpenInBrowser(path);
       else this.requestOpenInEditor(path);
+    },
+
+    _pendingUrl: null,
+
+    requestOpenUrl(url) {
+      this._pendingUrl = url;
+
+      let win = document.querySelector('.app-window[data-app="win-browser"]')
+             || document.getElementById('win-browser');
+
+      if (!win) {
+        if (typeof openBrowser === 'function') win = openBrowser();
+      } else {
+        win.dataset.minimized = 'false';
+        win.style.display = '';
+        if (typeof setFocus === 'function') setFocus(win);
+        if (typeof relayout === 'function') relayout();
+      }
+
+      const frame = win ? win.querySelector('iframe') : null;
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'proxyNav', url }, '*');
+      }
+    },
+
+    consumePendingUrl() {
+      const u = this._pendingUrl;
+      this._pendingUrl = null;
+      return u;
     },
 
     requestOpenInBrowser(path) {

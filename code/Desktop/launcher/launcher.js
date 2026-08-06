@@ -33,6 +33,21 @@
     { name: 'welcome', keys: 'about help intro', run: () => openWelcome() },
   ];
 
+  // .window files show up next to the built-in apps, keyed by their name
+  function userApps() {
+    if (!window.UserApps) return [];
+    return window.UserApps.listWindows().map(w => ({
+      name: w.name,
+      keys: w.name.toLowerCase(),
+      letter: w.letter,
+      run: () => window.UserApps.openWindow(w.path),
+    }));
+  }
+
+  function allApps() {
+    return APPS.concat(userApps());
+  }
+
   const post = (data) => window.postMessage(data, '*');
 
   const CMDS = [
@@ -93,7 +108,7 @@
   function render() {
     const cmd = isCmdMode();
     const q = (cmd ? input.value.slice(1) : input.value).trim().toLowerCase();
-    const source = cmd ? CMDS : APPS;
+    const source = cmd ? CMDS : allApps();
 
     prompt.textContent = cmd ? '>' : '';
     box.classList.toggle('cmd-mode', cmd);
@@ -120,7 +135,11 @@
       list.innerHTML = results
         .map((e, i) => `
           <button class="launcher-tile${i === sel ? ' selected' : ''}" data-i="${i}">
-            ${ICONS[e.name] ? png(ICONS[e.name]) : '<span class="launcher-tile-dot"></span>'}
+            ${ICONS[e.name]
+              ? png(ICONS[e.name])
+              : e.letter
+                ? `<span class="launcher-tile-letter">${e.letter}</span>`
+                : '<span class="launcher-tile-dot"></span>'}
             <span class="launcher-tile-name"></span>
           </button>`)
         .join('');

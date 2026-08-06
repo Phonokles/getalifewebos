@@ -648,11 +648,17 @@ function openWindow(baseId, title, src, width = 720, height = 520, opts = {}) {
       <div class="window-title">${title}</div>
     </div>
     <div class="window-content">
-      <iframe src="${src}"></iframe>
+      <iframe></iframe>
     </div>
   `;
 
   document.body.appendChild(win);
+
+  // a .window app carries its html in opts.srcdoc, a normal app loads a url
+  const contentFrame = win.querySelector('.window-content iframe');
+  if (opts.srcdoc != null) contentFrame.srcdoc = opts.srcdoc;
+  else contentFrame.src = src;
+
   tileOrder.push(id);
   saveFloatRect(win);
   setupDrag(win);
@@ -786,8 +792,12 @@ window.addEventListener('message', (e) => {
     document.documentElement.dataset.theme = e.data.theme;
     localStorage.setItem('theme', e.data.theme);
 
-    document.querySelectorAll('.app-window iframe').forEach(frame => {
-      frame.contentWindow.postMessage({ type: 'setTheme', theme: e.data.theme }, '*');
+    document.querySelectorAll('.app-window iframe, .user-widget iframe').forEach(frame => {
+      try {
+        frame.contentWindow.postMessage({ type: 'setTheme', theme: e.data.theme }, '*');
+      } catch (err) {
+        // frame not ready yet
+      }
     });
   }
   if (e.data?.type === 'setWmMode') {

@@ -31,7 +31,17 @@
             <span class="start-card-name">Single file</span>
             <span class="start-card-hint">just start typing</span>
           </button>
+
+          <button class="start-card" id="start-clone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>
+            </svg>
+            <span class="start-card-name">Clone from GitHub</span>
+            <span class="start-card-hint">pull a repo into your files</span>
+          </button>
         </div>
+
+        <div class="gh-bar" id="gh-bar"></div>
 
         <div class="start-recent" id="start-recent"></div>
       </div>
@@ -83,6 +93,7 @@
           <div class="editor-actions">
             <button class="editor-btn editor-btn-run" id="btn-run">Run &#9654;</button>
             <button class="editor-btn" id="btn-change-type">Type</button>
+            <button class="editor-btn" id="btn-commit">Commit &#8593;</button>
             <button class="editor-btn" id="btn-add-local">Download</button>
             <button class="editor-btn editor-btn-primary" id="btn-add-data">Save</button>
           </div>
@@ -97,7 +108,17 @@
 
   </div>
 
+  <div class="gh-modal" id="gh-modal">
+    <div class="gh-modal-box">
+      <button class="gh-modal-close" id="gh-modal-close">&times;</button>
+      <div class="gh-modal-title" id="gh-modal-title">GitHub</div>
+      <div class="gh-modal-body" id="gh-modal-body"></div>
+      <div class="gh-modal-status" id="gh-modal-status"></div>
+    </div>
+  </div>
+
   <script src="../../keybinds/keyforward.js"></script>
+  <script src="github.js"></script>
   <script src="code.js"></script>
 </body>
 </html>
