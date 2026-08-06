@@ -1,0 +1,227 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --fg-rgb: 255, 255, 255;
+  --bg-rgb: 10, 10, 10;
+  --bg-rgb-soft: 14, 14, 14;
+  --bg-rgb-softer: 26, 26, 26;
+}
+
+[data-theme="light"] {
+  --fg-rgb: 20, 20, 20;
+  --bg-rgb: 255, 255, 255;
+  --bg-rgb-soft: 245, 245, 245;
+  --bg-rgb-softer: 233, 233, 233;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(var(--bg-rgb-soft), var(--win-alpha, 0.88));
+  color: rgba(var(--fg-rgb), 0.9);
+  font-family: 'Bitcount', 'Courier New', monospace;
+}
+
+
+
+.mon-wide {
+  grid-column: 1 / -1;
+}
+
+
+
+
+
+
+
+
+
+.mon-row {
+  display: flex;
+  align-items: baseline;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.3);
+}
+
+.mon-row b {
+  margin-left: auto;
+  font-weight: normal;
+  color: rgba(var(--fg-rgb), 0.75);
+}
+
+.mon-procs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 128px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.1) transparent;
+}
+
+
+.mon-proc:nth-child(odd) {
+  background: rgba(var(--fg-rgb), 0.03);
+}
+
+
+
+
+
+.mon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: rgba(var(--fg-rgb), 0.05);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.12) transparent;
+}
+
+/* a hairline grid instead of floating cards, it reads calmer and denser */
+.mon-box {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px 18px;
+  background: rgba(var(--bg-rgb-soft), var(--win-alpha, 0.88));
+}
+
+.mon-wide {
+  grid-column: 1 / -1;
+}
+
+.mon-box-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mon-box-title {
+  font-size: 0.58rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(var(--fg-rgb), 0.3);
+}
+
+/* the number is the point of each box, so it gets the weight */
+.mon-box-val {
+  font-size: 1.35rem;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: rgb(var(--fg-rgb));
+}
+
+.mon-canvas {
+  width: 100%;
+  height: 62px;
+  display: block;
+}
+
+.mon-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(var(--fg-rgb), 0.09);
+  overflow: hidden;
+}
+
+.mon-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: rgba(var(--fg-rgb), 0.75);
+  transition: width 0.4s cubic-bezier(.32, .72, 0, 1);
+}
+
+.mon-sub {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.28);
+}
+
+.mon-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mon-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.64rem;
+  letter-spacing: 1px;
+}
+
+.mon-row-key {
+  color: rgba(var(--fg-rgb), 0.32);
+}
+
+.mon-row-val {
+  color: rgba(var(--fg-rgb), 0.75);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mon-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 150px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fg-rgb), 0.12) transparent;
+}
+
+.mon-proc {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.045);
+  font-size: 0.64rem;
+  letter-spacing: 1px;
+}
+
+.mon-proc:last-child {
+  border-bottom: none;
+}
+
+.mon-proc-pid {
+  width: 38px;
+  flex-shrink: 0;
+  color: rgba(var(--fg-rgb), 0.22);
+}
+
+.mon-proc-name {
+  flex: 1;
+  min-width: 0;
+  color: rgba(var(--fg-rgb), 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mon-proc-tag {
+  flex-shrink: 0;
+  color: rgba(var(--fg-rgb), 0.28);
+}
+
+.mon-empty {
+  padding: 18px 0;
+  text-align: center;
+  font-size: 0.66rem;
+  letter-spacing: 1px;
+  color: rgba(var(--fg-rgb), 0.25);
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <div class="viewer">
+
+    <div class="viewer-bar">
+      <button class="viewer-btn" id="btn-prev" title="previous">&lsaquo;</button>
+      <button class="viewer-btn" id="btn-next" title="next">&rsaquo;</button>
+      <span class="viewer-title" id="title">nothing open</span>
+      <div class="viewer-spacer"></div>
+      <span class="viewer-meta" id="meta"></span>
+      <button class="viewer-btn" id="btn-zoom" title="fit or full size">fit</button>
+      <button class="viewer-btn" id="btn-wall" title="use as wallpaper">set bg</button>
+    </div>
+
+    <div class="viewer-stage" id="stage">
+      <img id="image" alt="">
+      <div class="viewer-empty" id="empty">
+        drop nothing here [-_-]<br>
+        open a picture from Files, or draw one in Paint
+      </div>
+    </div>
+
+    <div class="viewer-strip" id="strip"></div>
+
+  </div>
+
+  <script src="../../keybinds/keyforward.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

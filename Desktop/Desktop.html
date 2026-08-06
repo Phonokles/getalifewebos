@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount:wght@100..900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Have a Life WebOS — Desktop</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="Desktop.css">
+  <link rel="stylesheet" href="taskbar/taskbar.css">
+  <link rel="stylesheet" href="footer/footer.css">
+  <link rel="stylesheet" href="windows/window.css">
+  <link rel="stylesheet" href="Overview/overview.css">
+  <link rel="stylesheet" href="../lock/lock.css">
+  <link rel="stylesheet" href="breakreminder/breakreminder.css">
+  <link rel="stylesheet" href="popups/notifications.css">
+  <link rel="stylesheet" href="widgets/todo.css">
+  <link rel="stylesheet" href="widgets/clock.css">
+  <link rel="stylesheet" href="widgets/widgetmanager.css">
+  <link rel="stylesheet" href="launcher/launcher.css">
+  <link rel="stylesheet" href="keybinds/keybinds.css">
+  <link rel="stylesheet" href="userapps/userapps.css">
+</head>
+<body>
+  <div class="notif-container" id="notif-container"></div>
+
+
+  <div class="power-popup" id="power-popup">
+    <button class="power-option shutdown" id="opt-shutdown">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v7"/><path d="M5.5 5.5A9 9 0 1 0 18.5 5.5"/></svg>
+      Shutdown
+    </button>
+    <button class="power-option" id="opt-lock">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      Lock
+    </button>
+    <button class="power-option" id="opt-reboot">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+      Reboot
+    </button>
+  </div>
+
+  <div class="clock-popup" id="clock-popup">
+    <div class="popup-left">
+      <div class="popup-no-notif">--no Notifications--</div>
+      <div class="popup-dnd">
+        <div class="dnd-toggle" id="dnd-toggle"></div>
+      </div>
+    </div>
+    <div class="popup-right">
+      <div class="popup-date-big" id="popup-date-big"></div>
+      <div class="popup-calendar" id="popup-calendar"></div>
+    </div>
+  </div>
+
+  <div class="wallpaper" id="wallpaper"></div>
+
+  <div class="clock-widget" id="clock-widget">
+    <div class="clock-time"><span id="clock-widget-time"></span><span class="clock-seconds" id="clock-widget-seconds"></span></div>
+    <div class="clock-date" id="clock-widget-date"></div>
+  </div>
+
+  <div class="todo-widget" id="todo-widget">
+    <div class="todo-header">
+      <span class="todo-title">Todo</span>
+    </div>
+    <div class="todo-body" id="todo-body"></div>
+    <div class="todo-add-row">
+      <input type="text" id="todo-new-input" class="todo-new-input" placeholder="add a todo...">
+      <button class="todo-add-btn" id="todo-add-btn">+</button>
+    </div>
+  </div>
+
+
+  <footer class="footer">
+    <div class="footer-indicator" id="footer-indicator"></div>
+
+    <div class="footer-left">
+      <button class="launcher-btn" id="launcher-btn" title="Launcher">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+      </button>
+      <div class="taskbar-apps" id="taskbar-apps"></div>
+    </div>
+
+    <div class="footer-center">
+      <button class="footer-clock" id="footer-clock" title="Calendar">
+        <span id="footer-date"></span>
+        <span id="footer-time"></span>
+      </button>
+    </div>
+
+    <div class="footer-right">
+      <div class="workspace-switcher" id="workspace-switcher">
+        <button class="ws-dot active" data-ws="1" onclick="switchWorkspace(1)">1</button>
+        <button class="ws-dot" data-ws="2" onclick="switchWorkspace(2)">2</button>
+        <button class="ws-dot" data-ws="3" onclick="switchWorkspace(3)">3</button>
+        <button class="ws-dot" data-ws="4" onclick="switchWorkspace(4)">4</button>
+      </div>
+      <button class="vol-btn" id="vol-btn" title="Volume">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5L6 9H3v6h3l5 4z"/>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" class="vol-wave1"/>
+          <path d="M18.5 5.5a9 9 0 0 1 0 13" class="vol-wave2"/>
+        </svg>
+      </button>
+      <button class="power-btn" id="power-btn" title="System menu">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 2v7"/>
+          <path d="M5.5 5.5A9 9 0 1 0 18.5 5.5"/>
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <div class="vol-popup" id="vol-popup">
+    <div class="vol-slider" id="vol-slider">
+      <div class="vol-track"><div class="vol-fill" id="vol-fill"></div></div>
+      <span class="vol-thumb" id="vol-thumb"></span>
+    </div>
+    <span class="vol-value" id="vol-value">50</span>
+  </div>
+
+  <div class="tb-preview" id="tb-preview"></div>
+  <div class="hot-corner" id="hot-corner"></div>
+
+
+  <div class="lock-screen" id="lock-screen">
+    <img class="lock-avatar" src="../assets/profile.jpg" alt="Profil">
+    <button class="unlock-btn" id="unlock-btn">Unlock</button>
+  </div>
+
+
+  <div class="break-overlay" id="break-overlay">
+    <div class="break-message">look away from the screen<br>for a short time</div>
+    <div class="break-countdown" id="break-countdown"></div>
+  </div>
+
+  <script src="applications/Files/filesystem.js"></script>
+  <script src="taskbar/taskbar.js"></script>
+  <script src="../lock/lock.js"></script>
+  <script src="sound/sound.js"></script>
+  <script src="windows/window.js"></script>
+  <script src="Overview/overview.js"></script>
+  <script src="widgets/todo.js"></script>
+  <script src="widgets/clock.js"></script>
+  <script src="widgets/widgetmanager.js"></script>
+  <script src="breakreminder/breakreminder.js"></script>
+  <script src="popups/notifications.js"></script>
+  <script src="popups/drinkreminder.js"></script>
+  <script src="launcher/launcher.js"></script>
+  <script src="keybinds/keybinds.js"></script>
+  <script src="footer/footer.js"></script>
+  <script src="Overview/hotcorner.js"></script>
+  <script src="config/schema.js"></script>
+  <script src="config/parser.js"></script>
+  <script src="config/apply.js"></script>
+  <script src="config/config.js"></script>
+  <script src="userapps/userapps.js"></script>
+
+</body>
+</html>
