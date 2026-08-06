@@ -309,31 +309,106 @@ function merge(lists) {
   return spread([...seen.values()].sort((a, b) => b.score - a.score));
 }
 
-// image search through the searxng mirrors. their json image results carry the
-// full image, a thumbnail (sometimes a path on the mirror) and the source page
-async function imageSearch(query) {
-  const picks = SEARX_HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, 8);
+// duckduckgo's image endpoint: needs a one time token (vqd) scraped from the
+// search page first, then returns a big normal image result set without a key
+async function ddgImages(query) {
+  const tok = await grab('https://duckduckgo.com/?q=' + encodeURIComponent(query) + '&iax=images&ia=images');
+  if (!tok.res) return [];
+  const html = await tok.res.text();
+  const vqd = (html.match(/vqd=["']([\d-]+)["']/) || html.match(/vqd=([\d-]+)&/)
+    || html.match(/vqd["':=\s]+["']?([\d-]+)/) || [])[1];
+  if (!vqd) return [];
 
+  const got = await grab(
+    'https://duckduckgo.com/i.js?l=us-en&o=json&q=' + encodeURIComponent(query) + '&vqd=' + vqd + '&f=,,,,,&p=1',
+    { referer: 'https://duckduckgo.com/', 'x-requested-with': 'XMLHttpRequest' });
+  if (!got.res) return [];
+  const body = await got.res.text();
+  if (!body.trim().startsWith('{')) return [];
+  try {
+    const data = JSON.parse(body);
+    return (data.results || []).map(r => ({
+      thumb: r.thumbnail || r.image, full: r.image, title: strip(r.title || 'image'), source: r.url || r.image,
+    })).filter(x => x.full && /^https?:/.test(x.full));
+  } catch (e) { return []; }
+}
+
+// openverse: an open image index whose api answers servers without a key
+async function openverseImages(query) {
+  const got = await grab('https://api.openverse.org/v1/images/?page_size=30&q=' + encodeURIComponent(query));
+  if (!got.res) return [];
+  try {
+    const data = await got.res.json();
+    return (data.results || []).map(r => ({
+      thumb: r.thumbnail || r.url,
+      full: r.url,
+      title: strip(r.title || 'image'),
+      source: r.foreign_landing_url || r.url,
+    })).filter(x => x.full && /^https?:/.test(x.full));
+  } catch (e) { return []; }
+}
+
+// wikimedia commons: very reliable for common subjects
+async function commonsImages(query) {
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search'
+    + '&gsrsearch=' + encodeURIComponent(query) + '&gsrnamespace=6&gsrlimit=30'
+    + '&prop=imageinfo&iiprop=url&iiurlwidth=320';
+  const got = await grab(url, { 'api-user-agent': 'HaveALifeWebOS/1.0 (contact via github)' });
+  if (!got.res) return [];
+  try {
+    const data = await got.res.json();
+    const pages = (data && data.query && data.query.pages) || {};
+    return Object.keys(pages).map(k => {
+      const p = pages[k];
+      const info = (p.imageinfo || [])[0] || {};
+      return { thumb: info.thumburl || info.url, full: info.url, title: strip((p.title || '').replace(/^File:/, '')), source: info.descriptionurl || info.url };
+    }).filter(x => x.full && /\.(jpe?g|png|gif|webp|svg)$/i.test(x.full));
+  } catch (e) { return []; }
+}
+
+// searxng image results as a bonus source
+async function searxImages(query) {
+  const picks = SEARX_HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, 6);
   const runs = picks.map(async host => {
     const json = await grab(`${host}/search?format=json&categories=images&safesearch=1&q=` + encodeURIComponent(query));
     if (!json.res) return [];
     try {
       const data = await json.res.json();
-      return (data.results || []).slice(0, 40).map(r => {
+      return (data.results || []).slice(0, 30).map(r => {
         let thumb = r.thumbnail_src || r.thumbnail || r.img_src || '';
         let full = r.img_src || r.thumbnail_src || '';
         if (thumb.startsWith('/')) thumb = host + thumb;
         if (full.startsWith('/')) full = host + full;
         return { thumb, full, title: strip(r.title || 'image'), source: r.url || full };
       }).filter(x => x.full && /^https?:/.test(x.full));
-    } catch (e) {
-      return [];
-    }
+    } catch (e) { return []; }
   });
-
   const settled = await Promise.all(runs.map(p => p.catch(() => [])));
-  const best = settled.filter(x => x.length).sort((a, b) => b.length - a.length)[0];
-  return best && best.length ? { items: best } : { items: [], error: 'no mirror returned images' };
+  return settled.filter(x => x.length).sort((a, b) => b.length - a.length)[0] || [];
+}
+
+// all sources at once, first-come merged and de-duplicated. ddg leads because
+// it returns the most, the others fill in and act as a fallback when it fails
+async function imageSearch(query) {
+  const lists = await Promise.all([
+    ddgImages(query).catch(() => []),
+    openverseImages(query).catch(() => []),
+    commonsImages(query).catch(() => []),
+    searxImages(query).catch(() => []),
+  ]);
+
+  const seen = new Set();
+  const items = [];
+  // interleave so results are not all from one source
+  const max = Math.max(...lists.map(l => l.length), 0);
+  for (let i = 0; i < max; i++) {
+    lists.forEach(list => {
+      const x = list[i];
+      if (x && x.full && !seen.has(x.full)) { seen.add(x.full); items.push(x); }
+    });
+  }
+
+  return { items: items.slice(0, 60), error: items.length ? null : 'no source returned images' };
 }
 
 export default async function handler(req, res) {

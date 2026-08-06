@@ -755,9 +755,9 @@ function renderResults(list, items, query) {
 
 // ---------- image search ----------
 
-// openverse is a key free, cors friendly index of openly licensed images, so
-// it works straight from the browser with no server in the way
-const IMAGE_API = 'https://api.openverse.org/v1/images/?mature=false&page_size=40&q=';
+// image search rides the same server side endpoint as web search, which avoids
+// the cors and rate limits that killed the old browser side call
+const IMAGE_API = '/api/search?type=images&q=';
 
 function safeName(title, url) {
   let base = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -788,7 +788,14 @@ function buildImages(query) {
 
   fetchImages(query)
     .then(data => {
-      if (data.note) head.textContent = `images for "${query}"  \u00b7  openverse`;
+      if (data.note && !data.items.length) {
+        grid.innerHTML = '';
+        const note = document.createElement('div');
+        note.className = 'br-results-note';
+        note.textContent = data.note === 'server' ? 'image search only works on the deployed site.' : 'no images found for that [-_-]';
+        grid.appendChild(note);
+        return;
+      }
       renderImages(grid, data.items);
     })
     .catch(() => {
@@ -805,19 +812,21 @@ function buildImages(query) {
 async function fetchImages(query) {
   if (typeof fetch !== 'function') return { items: [], note: 'this browser has no fetch' };
 
-  const res = await fetch(IMAGE_API + encodeURIComponent(query));
-  if (!res.ok) return { items: [], note: 'image search answered ' + res.status };
+  let res;
+  try { res = await fetch(IMAGE_API + encodeURIComponent(query)); }
+  catch (e) { return { items: [], note: 'server' }; }
+  if (!res.ok) return { items: [], note: 'server' };
 
   const data = await res.json();
-  const items = (data.results || []).map(r => ({
-    thumb: r.thumbnail || r.url,
-    full: r.url,
+  const items = (data.images || []).map(r => ({
+    thumb: r.thumb || r.full,
+    full: r.full,
     title: r.title || 'image',
-    source: r.foreign_landing_url || r.url,
-    creator: r.creator || '',
-    license: (r.license || '').toUpperCase(),
-    filename: safeName(r.title, r.url),
-  }));
+    source: r.source || r.full,
+    creator: '',
+    license: '',
+    filename: safeName(r.title, r.full),
+  })).filter(x => x.full);
 
   return { items, note: items.length ? null : 'nothing found' };
 }
@@ -921,6 +930,11 @@ function openLightbox(image) {
   wall.textContent = 'Set as wallpaper';
   wall.addEventListener('click', () => setAsWallpaper(image, wall));
 
+  const save = document.createElement('button');
+  save.className = 'br-lightbox-btn';
+  save.textContent = 'Save to Files';
+  save.addEventListener('click', () => saveImageToFs(image, save));
+
   const src = document.createElement('button');
   src.className = 'br-lightbox-btn';
   src.textContent = 'Open source \u2197';
@@ -932,6 +946,7 @@ function openLightbox(image) {
   close.addEventListener('click', () => back.remove());
 
   actions.appendChild(dl);
+  actions.appendChild(save);
   actions.appendChild(wall);
   actions.appendChild(src);
   bar.appendChild(caption);
@@ -972,6 +987,27 @@ async function downloadImage(image, btn) {
   setTimeout(() => { btn.textContent = old; }, 1400);
 }
 
+async function saveImageToFs(image, btn) {
+  const old = btn.textContent;
+  btn.textContent = 'saving...';
+
+  const blob = await fetchImageBlob(image);
+  if (!blob || !FS) {
+    btn.textContent = 'could not save';
+    setTimeout(() => { btn.textContent = old; }, 1600);
+    return;
+  }
+
+  const content = await blobToDataURL(blob);
+  if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
+  const name = uniqueName('Downloads', image.filename);
+  FS.writeFile('Downloads', name, content);
+
+  btn.textContent = 'Saved';
+  brToast('saved to Downloads/' + name);
+  setTimeout(() => { btn.textContent = old; }, 1600);
+}
+
 async function setAsWallpaper(image, btn) {
   const old = btn.textContent;
   btn.textContent = 'setting...';
@@ -999,6 +1035,97 @@ async function setAsWallpaper(image, btn) {
 
   btn.textContent = 'Wallpaper set';
   setTimeout(() => { btn.textContent = old; }, 1600);
+}
+
+// ---------- downloads into the filesystem ----------
+
+function brToast(msg) {
+  const root = document.querySelector('.br');
+  if (!root) return null;
+  let t = root.querySelector('.br-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'br-toast';
+    root.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 3200);
+  return t;
+}
+
+function fileNameFromUrl(url) {
+  try {
+    const name = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+    return decodeURIComponent(name);
+  } catch (e) { return ''; }
+}
+
+const MIME_EXT = {
+  'application/pdf': 'pdf', 'application/zip': 'zip', 'application/json': 'json',
+  'text/plain': 'txt', 'text/csv': 'csv', 'text/html': 'html',
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg',
+  'audio/mpeg': 'mp3', 'video/mp4': 'mp4',
+};
+
+function ensureExt(name, mime) {
+  if (/\.[a-z0-9]+$/i.test(name)) return name;
+  const ext = MIME_EXT[(mime || '').split(';')[0].trim()] || 'bin';
+  return (name || 'download') + '.' + ext;
+}
+
+function isTextType(mime, name) {
+  return /^text\//i.test(mime || '')
+    || /(json|xml|javascript|csv)/i.test(mime || '')
+    || /\.(txt|md|csv|json|xml|js|css|html?|svg)$/i.test(name || '');
+}
+
+function uniqueName(folder, name) {
+  if (!FS.exists((folder ? folder + '/' : '') + name)) return name;
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  let i = 1;
+  while (FS.exists((folder ? folder + '/' : '') + stem + '(' + i + ')' + ext)) i++;
+  return stem + '(' + i + ')' + ext;
+}
+
+async function downloadToFs(url, suggestedName) {
+  if (!FS) { brToast('no filesystem to save into'); return; }
+  brToast('downloading...');
+
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(url));
+    if (!res.ok) throw new Error('the file answered ' + res.status);
+
+    const blob = await res.blob();
+    let name = (suggestedName || fileNameFromUrl(url) || 'download').split(/[?#]/)[0];
+
+    // the proxy hands back a small html error page when a file is blocked or
+    // over its size limit. saving that as the "file" would be junk, so bounce
+    // the download to a real browser tab instead
+    const wantedBinary = /\.(pdf|zip|rar|7z|tar|gz|docx?|xlsx?|pptx?|mp3|mp4|apk|exe|dmg|iso|epub)(\?|$)/i.test(name + url);
+    if (/text\/html/i.test(blob.type) && wantedBinary) {
+      brToast('too big or blocked here, opening in a real tab');
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+
+    name = ensureExt(name, blob.type);
+    const content = isTextType(blob.type, name) ? await blob.text() : await blobToDataURL(blob);
+
+    if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
+    name = uniqueName('Downloads', name);
+
+    const err = FS.writeFile('Downloads', name, content);
+    if (err) throw new Error(err);
+
+    brToast('saved to Downloads/' + name);
+  } catch (e) {
+    brToast('could not download here, opening in a real tab');
+    window.open(url, '_blank', 'noopener');
+  }
 }
 
 // no allow-same-origin on purpose: the proxied page comes from our own origin,
@@ -1049,6 +1176,12 @@ function proxyFrame(url) {
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'proxyNav' && e.data.url) {
     go(e.data.url);
+    return;
+  }
+
+  // a download link on a proxied website: pull the file into the filesystem
+  if (e.data?.type === 'proxyDownload' && e.data.url) {
+    downloadToFs(e.data.url, e.data.name);
     return;
   }
 
