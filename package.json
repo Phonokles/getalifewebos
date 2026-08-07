@@ -1,0 +1,16 @@
+{
+  "name": "getalifewebos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Have a Life WebOS - self-hosted server (serves the app + proxy/search/run APIs)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
