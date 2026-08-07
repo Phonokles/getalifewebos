@@ -1,3 +1,9 @@
+// ============================================================================
+//  Have a Life WebOS - browser.js - BUILD: COMMONS-IMG-2026-08-06c
+//  image search = Wikimedia Commons (direct, then via proxy), no /api needed.
+//  the empty-note now shows the precise reason per source (http code / page count).
+// ============================================================================
+
 document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
 
 window.addEventListener('message', (e) => {
@@ -22,7 +28,7 @@ const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : nu
 //   - anchor click interception
 //   - runtime virtualization: iframes and images created by scripts get their
 //     content pulled from the filesystem via the parent, and a relay so nested
-//     app frames (which cn only postMessage one level up) reach the browser
+//     app frames (which can only postMessage one level up) reach the browser
 function fileHook(base) {
   return `<script>
 (function () {
@@ -834,29 +840,46 @@ function parseCommons(data) {
 
 // commons directly from the browser (needs its cross origin support)
 async function commonsImages(query) {
-  const res = await fetch(COMMONS_API + encodeURIComponent(query));
-  if (!res.ok) return [];
-  return parseCommons(await res.json());
+  let res;
+  try { res = await fetch(COMMONS_API + encodeURIComponent(query)); }
+  catch (e) { return { items: [], reason: 'fetch-threw' }; }
+  if (!res.ok) return { items: [], reason: 'http' + res.status };
+  let data;
+  try { data = await res.json(); } catch (e) { return { items: [], reason: 'notjson' }; }
+  if (data && data.error) return { items: [], reason: 'apierr:' + (data.error.code || '?') };
+  const pageCount = data && data.query && data.query.pages ? Object.keys(data.query.pages).length : -1;
+  const items = parseCommons(data);
+  return { items, reason: items.length ? null : 'pages=' + pageCount };
 }
 
 // commons through our own proxy, which adds the cors header. this works even
 // when the browser blocks the direct cross origin call
 async function commonsViaProxy(query) {
-  const res = await fetch(PROXY + encodeURIComponent(COMMONS_API + encodeURIComponent(query)));
-  if (!res.ok) return [];
-  const text = await res.text();
-  return parseCommons(JSON.parse(text));
+  let res;
+  try { res = await fetch(PROXY + encodeURIComponent(COMMONS_API + encodeURIComponent(query))); }
+  catch (e) { return { items: [], reason: 'fetch-threw' }; }
+  if (!res.ok) return { items: [], reason: 'http' + res.status };
+  let data;
+  try { data = JSON.parse(await res.text()); } catch (e) { return { items: [], reason: 'notjson' }; }
+  if (data && data.error) return { items: [], reason: 'apierr:' + (data.error.code || '?') };
+  const pageCount = data && data.query && data.query.pages ? Object.keys(data.query.pages).length : -1;
+  const items = parseCommons(data);
+  return { items, reason: items.length ? null : 'pages=' + pageCount };
 }
 
 async function serverImages(query) {
-  const res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query));
-  if (!res.ok) return [];
-  const data = await res.json();
-  return (data.images || []).map(r => ({
+  let res;
+  try { res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query)); }
+  catch (e) { return { items: [], reason: 'fetch-threw' }; }
+  if (!res.ok) return { items: [], reason: 'http' + res.status };
+  let data;
+  try { data = await res.json(); } catch (e) { return { items: [], reason: 'notjson' }; }
+  const items = (data.images || []).map(r => ({
     thumb: r.thumb || r.full, full: r.full, title: r.title || 'image',
     source: r.source || r.full, creator: '', license: '',
     filename: safeName(r.title, r.full),
   })).filter(x => x.full);
+  return { items, reason: items.length ? null : (data.images ? 'empty-list' : 'no-images-key') };
 }
 
 async function fetchImages(query) {
@@ -871,11 +894,11 @@ async function fetchImages(query) {
 
   for (const [name, fn] of attempts) {
     try {
-      const items = await fn(query);
-      if (items.length) return { items, note: null };
-      failed.push(name + ':empty');
+      const out = await fn(query);
+      if (out.items && out.items.length) return { items: out.items, note: null };
+      failed.push(name + ':' + (out.reason || 'empty'));
     } catch (e) {
-      failed.push(name + ':' + (e && e.message ? e.message.slice(0, 30) : 'err'));
+      failed.push(name + ':' + (e && e.message ? e.message.slice(0, 24) : 'err'));
     }
   }
 
