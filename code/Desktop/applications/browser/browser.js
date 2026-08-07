@@ -1,7 +1,7 @@
 // ============================================================================
-//  Have a Life WebOS - browser.js - BUILD: COMMONS-IMG-2026-08-06c
-//  image search = Wikimedia Commons (direct, then via proxy), no /api needed.
-//  the empty-note now shows the precise reason per source (http code / page count).
+//  Have a Life WebOS - browser.js - BUILD: COMMONS-IMG-2026-08-06e
+//  image search urls via Special:FilePath (works w/ empty imageinfo).
+//  e = downloads now store correct image mime so the viewer shows them.
 // ============================================================================
 
 document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
@@ -822,20 +822,22 @@ function parseCommons(data) {
   return Object.keys(pages)
     .map(k => pages[k])
     .sort((a, b) => (a.index || 0) - (b.index || 0))
+    .filter(p => /\.(jpe?g|png|gif|webp|svg)$/i.test(p.title || ''))
     .map(p => {
       const info = (p.imageinfo || [])[0] || {};
       const name = (p.title || '').replace(/^File:/, '');
+      const file = encodeURIComponent(name.replace(/ /g, '_'));
+      const filePath = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + file;
       return {
-        thumb: info.thumburl || info.url,
-        full: info.url,
+        thumb: info.thumburl || filePath + '?width=400',
+        full: info.url || filePath,
         title: name.replace(/\.[^.]+$/, ''),
-        source: info.descriptionurl || info.url,
+        source: info.descriptionurl || 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(p.title || ''),
         creator: '',
         license: '',
-        filename: safeName(name, info.url),
+        filename: safeName(name, name),
       };
-    })
-    .filter(x => x.full && /\.(jpe?g|png|gif|webp|svg)$/i.test(x.full));
+    });
 }
 
 // commons directly from the browser (needs its cross origin support)
@@ -1072,7 +1074,7 @@ async function saveImageToFs(image, btn) {
     return;
   }
 
-  const content = await blobToDataURL(blob);
+  const content = fixImageMime(await blobToDataURL(blob), image.filename);
   if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
   const name = uniqueName('Downloads', image.filename);
   FS.writeFile('Downloads', name, content);
@@ -1165,6 +1167,16 @@ function uniqueName(folder, name) {
   return stem + '(' + i + ')' + ext;
 }
 
+// a data url whose mime matches the file extension, so image viewers that key
+// off "data:image/..." recognise downloads even when the server sent a generic
+// content-type
+function fixImageMime(dataUrl, name) {
+  const m = /\.(png|jpe?g|gif|webp|svg)$/i.exec(name || '');
+  if (!m || !/^data:/.test(dataUrl) || /^data:image\//i.test(dataUrl)) return dataUrl;
+  const mime = { jpg: 'jpeg', jpeg: 'jpeg', png: 'png', gif: 'gif', webp: 'webp', svg: 'svg+xml' }[m[1].toLowerCase()] || 'jpeg';
+  return dataUrl.replace(/^data:[^;,]*/, 'data:image/' + mime);
+}
+
 async function downloadToFs(url, suggestedName) {
   if (!FS) { brToast('no filesystem to save into'); return; }
   brToast('downloading...');
@@ -1187,7 +1199,7 @@ async function downloadToFs(url, suggestedName) {
     }
 
     name = ensureExt(name, blob.type);
-    const content = isTextType(blob.type, name) ? await blob.text() : await blobToDataURL(blob);
+    let content = isTextType(blob.type, name) ? await blob.text() : fixImageMime(await blobToDataURL(blob), name);
 
     if (!FS.exists('Downloads')) FS.createFolder('', 'Downloads');
     name = uniqueName('Downloads', name);
