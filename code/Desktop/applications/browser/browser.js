@@ -22,7 +22,7 @@ const FS = (window.parent && window.parent.WebOSFS) ? window.parent.WebOSFS : nu
 //   - anchor click interception
 //   - runtime virtualization: iframes and images created by scripts get their
 //     content pulled from the filesystem via the parent, and a relay so nested
-//     app frames (which can only postMessage one level up) reach the browser
+//     app frames (which cn only postMessage one level up) reach the browser
 function fileHook(base) {
   return `<script>
 (function () {
@@ -794,7 +794,7 @@ function buildImages(query) {
         grid.innerHTML = '';
         const note = document.createElement('div');
         note.className = 'br-results-note';
-        note.textContent = 'no images found for that [-_-]';
+        note.textContent = data.note || 'no images found for that [-_-]';
         grid.appendChild(note);
         return;
       }
@@ -811,13 +811,8 @@ function buildImages(query) {
   return box;
 }
 
-async function commonsImages(query) {
-  const res = await fetch(COMMONS_API + encodeURIComponent(query));
-  if (!res.ok) return [];
-
-  const data = await res.json();
+function parseCommons(data) {
   const pages = (data && data.query && data.query.pages) || {};
-
   return Object.keys(pages)
     .map(k => pages[k])
     .sort((a, b) => (a.index || 0) - (b.index || 0))
@@ -837,30 +832,54 @@ async function commonsImages(query) {
     .filter(x => x.full && /\.(jpe?g|png|gif|webp|svg)$/i.test(x.full));
 }
 
+// commons directly from the browser (needs its cross origin support)
+async function commonsImages(query) {
+  const res = await fetch(COMMONS_API + encodeURIComponent(query));
+  if (!res.ok) return [];
+  return parseCommons(await res.json());
+}
+
+// commons through our own proxy, which adds the cors header. this works even
+// when the browser blocks the direct cross origin call
+async function commonsViaProxy(query) {
+  const res = await fetch(PROXY + encodeURIComponent(COMMONS_API + encodeURIComponent(query)));
+  if (!res.ok) return [];
+  const text = await res.text();
+  return parseCommons(JSON.parse(text));
+}
+
+async function serverImages(query) {
+  const res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query));
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.images || []).map(r => ({
+    thumb: r.thumb || r.full, full: r.full, title: r.title || 'image',
+    source: r.source || r.full, creator: '', license: '',
+    filename: safeName(r.title, r.full),
+  })).filter(x => x.full);
+}
+
 async function fetchImages(query) {
   if (typeof fetch !== 'function') return { items: [], note: 'this browser has no fetch' };
 
-  // primary: wikimedia commons, works with no server
-  try {
-    const items = await commonsImages(query);
-    if (items.length) return { items, note: null };
-  } catch (e) { /* fall through to the server */ }
+  const attempts = [
+    ['commons', commonsImages],
+    ['commons-proxy', commonsViaProxy],
+    ['server', serverImages],
+  ];
+  const failed = [];
 
-  // fallback: the deployed search api (duckduckgo etc.)
-  try {
-    const res = await fetch('/api/search?type=images&q=' + encodeURIComponent(query));
-    if (res.ok) {
-      const data = await res.json();
-      const items = (data.images || []).map(r => ({
-        thumb: r.thumb || r.full, full: r.full, title: r.title || 'image',
-        source: r.source || r.full, creator: '', license: '',
-        filename: safeName(r.title, r.full),
-      })).filter(x => x.full);
+  for (const [name, fn] of attempts) {
+    try {
+      const items = await fn(query);
       if (items.length) return { items, note: null };
+      failed.push(name + ':empty');
+    } catch (e) {
+      failed.push(name + ':' + (e && e.message ? e.message.slice(0, 30) : 'err'));
     }
-  } catch (e) { /* offline or not deployed */ }
+  }
 
-  return { items: [], note: 'nothing found' };
+  return { items: [], note: 'no images (' + failed.join(', ') + ')' };
 }
 
 function renderImages(grid, items) {
